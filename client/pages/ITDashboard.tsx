@@ -355,22 +355,34 @@ export default function ITDashboard() {
                             <span className="font-medium text-white">
                               {notification.employeeName}
                             </span>
-                            <Badge
-                              variant="secondary"
-                              className="bg-orange-500/20 text-orange-400 text-xs"
-                            >
-                              New
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant="secondary"
+                                className="bg-orange-500/20 text-orange-400 text-xs"
+                              >
+                                New
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  // Prefill Create IT form and open it
+                                  setNewEmpId(notification.employeeId);
+                                  setNewDepartment(notification.department || "");
+                                  setNewTableNumber(notification.tableNumber || "");
+                                  setShowCreateITSheet(true);
+                                }}
+                                className="text-xs"
+                              >
+                                Process
+                              </Button>
+                            </div>
                           </div>
                           <div className="text-xs text-slate-400">
-                            {notification.department} • Table{" "}
-                            {notification.tableNumber}
+                            {notification.department} • Table {notification.tableNumber}
                           </div>
                           <div className="text-xs text-slate-500">
-                            Created{" "}
-                            {new Date(
-                              notification.createdAt,
-                            ).toLocaleDateString()}
+                            Created {new Date(notification.createdAt).toLocaleDateString()}
                           </div>
                         </div>
                       </DropdownMenuItem>

@@ -372,6 +372,7 @@ export default function ITDashboard() {
                                   setNewEmpId(notification.employeeId);
                                   setNewDepartment(notification.department || "");
                                   setNewTableNumber(notification.tableNumber || "");
+                                  setLockPrefill(true);
                                   setShowCreateITSheet(true);
                                 }}
                                 className="text-xs"

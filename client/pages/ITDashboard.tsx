@@ -114,6 +114,13 @@ export default function ITDashboard() {
   const [previewSecrets, setPreviewSecrets] = useState(false);
   const [previewFull, setPreviewFull] = useState(false);
 
+  // Gadgets viewer state
+  const [showGadgetsPanel, setShowGadgetsPanel] = useState(false);
+  const [assets, setAssets] = useState<any[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+
   // Create IT record (inline) state
   type NewEmailRow = {
     provider: "CUSTOM";

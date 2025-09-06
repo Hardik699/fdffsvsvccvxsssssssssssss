@@ -203,7 +203,22 @@ export default function ITDashboard() {
         notifications.filter((n: PendingITNotification) => !n.processed),
       );
     }
+
+    // load system assets for gadgets viewer
+    const raw = localStorage.getItem("systemAssets");
+    const list = raw ? JSON.parse(raw) : [];
+    setAssets(list);
+    const cats = Array.from(new Set(list.map((a: any) => a.category))).filter(Boolean);
+    setCategories(cats);
   }, []);
+
+  const filteredAssets = assets.filter((a) => selectedCategory === 'all' ? true : a.category === selectedCategory);
+
+  function toggleActive(id: string, value: boolean) {
+    const next = assets.map((a) => (a.id === id ? { ...a, metadata: { ...(a.metadata||{}), active: value }, active: value } : a));
+    setAssets(next);
+    localStorage.setItem("systemAssets", JSON.stringify(next));
+  }
 
   const handleProcessEmployee = (_notification: PendingITNotification) => {
     alert("IT has been notified. Credential form is disabled in this build.");

@@ -308,6 +308,25 @@ export default function ITDashboard() {
               </p>
             </div>
           </div>
+          {/* Gadgets Management card */}
+          <div className="ml-6">
+            <Card className="bg-slate-900/60 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white">Gajets Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <p className="text-slate-300">Manage device inventory and assignments</p>
+                  <Button
+                    onClick={() => navigate("/gadgets-management")}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Open
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
           <div className="flex items-center gap-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

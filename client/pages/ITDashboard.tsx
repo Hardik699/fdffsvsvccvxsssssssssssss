@@ -174,6 +174,18 @@ export default function ITDashboard() {
     if (!ids.includes(newProviderId)) setNewProviderId("");
   }, [newProvider]);
 
+  function getProviderIds(provider: string) {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const assets = raw ? (JSON.parse(raw) as any[]) : [];
+    if (provider === "VITEL_GLOBAL") {
+      return assets.filter((a: any) => a.category === "vitel-global").map((a: any) => a.id);
+    }
+    if (provider === "VONAGE") {
+      return assets.filter((a: any) => a.category === "vonage").map((a: any) => a.vonageExtCode || a.vonageNumber || a.id);
+    }
+    return [];
+  }
+
   // when employee selected, prefill department and table
   useEffect(() => {
     const emp = employees.find((e) => e.id === newEmpId) || null;

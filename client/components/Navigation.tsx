@@ -273,15 +273,6 @@ export default function AppNav() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={handleViewUsers}
-                      className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-300"
-                    >
-                      <Users className="h-4 w-4 mr-2" />
-                      View Users
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
                       onClick={handleMainDashboard}
                       className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-300"
                     >
@@ -335,6 +326,13 @@ export default function AppNav() {
                         className="bg-slate-800 border-slate-700 text-white"
                         align="end"
                       >
+                        <DropdownMenuItem
+                          className="focus:bg-slate-700 cursor-pointer"
+                          onClick={handleViewUsers}
+                        >
+                          <Users className="h-4 w-4 mr-2" />
+                          View Users
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           className="focus:bg-slate-700 cursor-pointer"
                           onClick={dbHealth}

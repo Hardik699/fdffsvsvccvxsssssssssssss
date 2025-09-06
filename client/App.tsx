@@ -19,6 +19,7 @@ import SystemInfoDetail from "./pages/SystemInfoDetail";
 import PCLaptopInfo from "./pages/PCLaptopInfo";
 import DemoDataView from "./pages/DemoDataView";
 import MasterAdmin from "./pages/MasterAdmin";
+import GadgetsManagement from "./pages/GadgetsManagement";
 
 const queryClient = new QueryClient();
 

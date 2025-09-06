@@ -464,6 +464,7 @@ export default function ITDashboard() {
                       <Select
                         value={newDepartment}
                         onValueChange={setNewDepartment}
+                        disabled={lockPrefill}
                       >
                         <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
                           <SelectValue placeholder="Select department" />

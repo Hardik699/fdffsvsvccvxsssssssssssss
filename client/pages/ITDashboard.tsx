@@ -115,6 +115,8 @@ export default function ITDashboard() {
 
   // Controlled sheet for creating IT records (so notifications can open it)
   const [showCreateITSheet, setShowCreateITSheet] = useState(false);
+  // When true (opened from a notification) certain fields are fixed and cannot be edited
+  const [lockPrefill, setLockPrefill] = useState(false);
 
 
 

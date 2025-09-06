@@ -293,6 +293,32 @@ export default function MasterAdmin() {
         currentUser: localStorage.getItem("currentUser") || "",
       };
 
+      // Attempt to load server-backed data when available (Neon/Postgres)
+      try {
+        const headers = { "Content-Type": "application/json", "x-role": "admin" } as const;
+        // Fetch assets from server (if DB connected)
+        const [assetsResp, itResp, empResp] = await Promise.allSettled([
+          fetch("/api/hr/assets", { headers }),
+          fetch("/api/hr/it-accounts", { headers }),
+          fetch("/api/hr/employees", { headers }),
+        ]);
+
+        if (assetsResp.status === "fulfilled" && assetsResp.value.ok) {
+          const j = await assetsResp.value.json().catch(() => null);
+          if (j?.items && Array.isArray(j.items)) systemAssets = j.items;
+        }
+        if (itResp.status === "fulfilled" && itResp.value.ok) {
+          const j = await itResp.value.json().catch(() => null);
+          if (j?.items && Array.isArray(j.items)) itAccounts = j.items;
+        }
+        if (empResp.status === "fulfilled" && empResp.value.ok) {
+          const j = await empResp.value.json().catch(() => null);
+          if (Array.isArray(j.items || j)) employees = j.items || j;
+        }
+      } catch (e) {
+        // ignore server fetch errors and fallback to localStorage
+      }
+
       setMasterData({
         adminUsers,
         userCredentials,

@@ -19,7 +19,6 @@ import SystemInfoDetail from "./pages/SystemInfoDetail";
 import PCLaptopInfo from "./pages/PCLaptopInfo";
 import DemoDataView from "./pages/DemoDataView";
 import MasterAdmin from "./pages/MasterAdmin";
-import DeployPage from "./pages/Deploy";
 
 const queryClient = new QueryClient();
 

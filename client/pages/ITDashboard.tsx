@@ -547,31 +547,63 @@ export default function ITDashboard() {
                           <div className="space-y-2">
                             <Select
                               value={row.provider}
-                              onValueChange={() => {
-                                /* only CUSTOM supported */
+                              onValueChange={(v) => {
+                                setNewEmails((r) => r.map((x, i) => (i === idx ? { ...x, provider: v as any, providerId: "" } : x)));
                               }}
                             >
                               <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
-                                <SelectValue> CUSTOM </SelectValue>
+                                <SelectValue> Provider </SelectValue>
                               </SelectTrigger>
                               <SelectContent className="bg-slate-800 border-slate-700 text-white">
                                 <SelectItem value="CUSTOM">CUSTOM</SelectItem>
+                                <SelectItem value="NSIT">NSIT</SelectItem>
+                                <SelectItem value="LP">LP</SelectItem>
+                                <SelectItem value="MS">MS TEMS</SelectItem>
+                                <SelectItem value="ORWIN">ORWIN</SelectItem>
+                                <SelectItem value="VITEL_GLOBAL">VITEL GLOBAL</SelectItem>
+                                <SelectItem value="VONAGE">VONAGE</SelectItem>
                               </SelectContent>
                             </Select>
-                            <Input
-                              placeholder="Custom provider"
-                              value={row.providerCustom || ""}
-                              onChange={(e) =>
-                                setNewEmails((r) =>
-                                  r.map((x, i) =>
-                                    i === idx
-                                      ? { ...x, providerCustom: e.target.value }
-                                      : x,
-                                  ),
-                                )
-                              }
-                              className="bg-slate-800/50 border-slate-700 text-white"
-                            />
+
+                            {row.provider === "CUSTOM" ? (
+                              <Input
+                                placeholder="Custom provider"
+                                value={row.providerCustom || ""}
+                                onChange={(e) =>
+                                  setNewEmails((r) =>
+                                    r.map((x, i) =>
+                                      i === idx
+                                        ? { ...x, providerCustom: e.target.value }
+                                        : x,
+                                    ),
+                                  )
+                                }
+                                className="bg-slate-800/50 border-slate-700 text-white"
+                              />
+                            ) : null}
+
+                            { (row.provider === "VITEL_GLOBAL" || row.provider === "VONAGE") && (
+                              <Select
+                                value={row.providerId || ""}
+                                onValueChange={(v) =>
+                                  setNewEmails((r) => r.map((x, i) => (i === idx ? { ...x, providerId: v } : x)))
+                                }
+                              >
+                                <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
+                                  <SelectValue placeholder="Select ID" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-800 border-slate-700 text-white max-h-64">
+                                  {getProviderIds(row.provider).length === 0 ? (
+                                    <div className="px-3 py-2 text-slate-400">No IDs available</div>
+                                  ) : (
+                                    getProviderIds(row.provider).map((id) => (
+                                      <SelectItem key={id} value={id}>{id}</SelectItem>
+                                    ))
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            )}
+
                           </div>
                           <Input
                             placeholder="email@example.com"

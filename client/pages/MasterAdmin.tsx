@@ -828,6 +828,73 @@ export default function MasterAdmin() {
                 >
                   IT Notifications
                 </TabsTrigger>
+                {/* Asset category quick filters */}
+                <TabsTrigger
+                  value="systemassets"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  All Assets
+                </TabsTrigger>
+                <TabsTrigger
+                  value="mouse"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  Mouse
+                </TabsTrigger>
+                <TabsTrigger
+                  value="keyboard"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  Keyboard
+                </TabsTrigger>
+                <TabsTrigger
+                  value="motherboard"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  Motherboard
+                </TabsTrigger>
+                <TabsTrigger
+                  value="ram"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=state=active]:text-white rounded-md px-3 py-1"
+                >
+                  RAM
+                </TabsTrigger>
+                <TabsTrigger
+                  value="storage"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  Storage
+                </TabsTrigger>
+                <TabsTrigger
+                  value="power-supply"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  Power Supply
+                </TabsTrigger>
+                <TabsTrigger
+                  value="headphone"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  Headphone
+                </TabsTrigger>
+                <TabsTrigger
+                  value="camera"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  Camera
+                </TabsTrigger>
+                <TabsTrigger
+                  value="monitor"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  Monitor
+                </TabsTrigger>
+                <TabsTrigger
+                  value="vonage"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  Vonage
+                </TabsTrigger>
               </TabsList>
 
               {/* Employees Table */}

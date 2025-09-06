@@ -329,6 +329,10 @@ export default function AppNav() {
                     className="bg-slate-800 border-slate-700 text-white"
                     align="end"
                   >
+                    <DropdownMenuItem className="focus:bg-slate-700 cursor-pointer" onClick={handleViewUsers}>
+                      <Users className="h-4 w-4 mr-2" />
+                      View Users
+                    </DropdownMenuItem>
                     <DropdownMenuItem className="focus:bg-slate-700 cursor-pointer">
                       <User className="h-4 w-4 mr-2" />
                       Profile

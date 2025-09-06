@@ -379,9 +379,9 @@ export default function ITDashboard() {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-            <Sheet>
+            <Sheet open={showCreateITSheet} onOpenChange={setShowCreateITSheet}>
               <SheetTrigger asChild>
-                <Button className="bg-blue-500 hover:bg-blue-600 text-white">
+                <Button onClick={() => setShowCreateITSheet(true)} className="bg-blue-500 hover:bg-blue-600 text-white">
                   Add IT Data
                 </Button>
               </SheetTrigger>
@@ -1188,7 +1188,7 @@ export default function ITDashboard() {
                                         {providerAsset?.vonagePassword
                                           ? previewSecrets
                                             ? providerAsset.vonagePassword
-                                            : "••••••"
+                                            : "���•••••"
                                           : "-"}
                                       </div>
                                     </div>

@@ -122,8 +122,9 @@ export default function ITDashboard() {
 
   // Create IT record (inline) state
   type NewEmailRow = {
-    provider: "CUSTOM";
+    provider: "CUSTOM" | "NSIT" | "LP" | "MS" | "ORWIN" | "VITEL_GLOBAL" | "VONAGE";
     providerCustom?: string;
+    providerId?: string;
     email: string;
     password: string;
   };
@@ -137,7 +138,7 @@ export default function ITDashboard() {
   const [newLmId, setNewLmId] = useState("");
   const [newLmPassword, setNewLmPassword] = useState("");
   const [newEmails, setNewEmails] = useState<NewEmailRow[]>([
-    { provider: "CUSTOM", providerCustom: "", email: "", password: "" },
+    { provider: "CUSTOM", providerCustom: "", providerId: "", email: "", password: "" },
   ]);
   const [showPw, setShowPw] = useState(false);
   const [newNotes, setNewNotes] = useState("");

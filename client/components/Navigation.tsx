@@ -26,7 +26,6 @@ import {
   LayoutDashboard,
   Database,
   RefreshCw,
-  CloudUpload,
   ServerCog,
 } from "lucide-react";
 

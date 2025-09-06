@@ -1,6 +1,5 @@
 import AppNav from "@/components/Navigation";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,7 +57,6 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
 
 interface ITRecord {
   id: string;
@@ -115,11 +113,6 @@ export default function ITDashboard() {
   const [previewSecrets, setPreviewSecrets] = useState(false);
   const [previewFull, setPreviewFull] = useState(false);
 
-  // Gadgets viewer state
-  const [showGadgetsPanel, setShowGadgetsPanel] = useState(false);
-  const [assets, setAssets] = useState<any[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
 
   // Create IT record (inline) state
@@ -205,21 +198,7 @@ export default function ITDashboard() {
       );
     }
 
-    // load system assets for gadgets viewer
-    const raw = localStorage.getItem("systemAssets");
-    const list = raw ? JSON.parse(raw) : [];
-    setAssets(list);
-    const cats = Array.from(new Set(list.map((a: any) => a.category))).filter(Boolean);
-    setCategories(cats);
   }, []);
-
-  const filteredAssets = assets.filter((a) => selectedCategory === 'all' ? true : a.category === selectedCategory);
-
-  function toggleActive(id: string, value: boolean) {
-    const next = assets.map((a) => (a.id === id ? { ...a, metadata: { ...(a.metadata||{}), active: value }, active: value } : a));
-    setAssets(next);
-    localStorage.setItem("systemAssets", JSON.stringify(next));
-  }
 
   const handleProcessEmployee = (_notification: PendingITNotification) => {
     alert("IT has been notified. Credential form is disabled in this build.");
@@ -331,84 +310,6 @@ export default function ITDashboard() {
               </p>
             </div>
           </div>
-          {/* Gadgets Management card */}
-          <div className="ml-6">
-            <Card className="bg-slate-900/60 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">Gajets Management</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <p className="text-slate-300">Manage device inventory and assignments</p>
-                  <Button
-                    onClick={() => setShowGadgetsPanel(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    Open
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Gadgets Viewer Sheet */}
-          <Sheet open={showGadgetsPanel} onOpenChange={setShowGadgetsPanel}>
-            <SheetContent side="right" className="bg-slate-900 border-slate-700 text-white w-[min(100%,900px)]">
-              <SheetHeader>
-                <SheetTitle>Gajets Inventory</SheetTitle>
-              </SheetHeader>
-              <div className="p-4 space-y-4">
-                <div className="flex gap-2 flex-wrap">
-                  {categories.map((c) => (
-                    <Button
-                      key={c}
-                      variant={selectedCategory === c ? undefined : "outline"}
-                      onClick={() => setSelectedCategory(c)}
-                      className="text-xs"
-                    >
-                      {c}
-                    </Button>
-                  ))}
-                  <Button variant={selectedCategory === 'all' ? undefined : 'outline'} onClick={() => setSelectedCategory('all') } className="text-xs">All</Button>
-                </div>
-
-                <div className="rounded-md border border-slate-700 p-2 overflow-auto max-h-[60vh]">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Vendor</TableHead>
-                        <TableHead>Serial</TableHead>
-                        <TableHead>Purchase</TableHead>
-                        <TableHead>Warranty</TableHead>
-                        <TableHead>Active</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredAssets.map((a) => (
-                        <TableRow key={a.id}>
-                          <TableCell className="font-mono">{a.id}</TableCell>
-                          <TableCell>{a.category}</TableCell>
-                          <TableCell>{a.vendorName}</TableCell>
-                          <TableCell className="font-mono">{a.serialNumber}</TableCell>
-                          <TableCell>{a.purchaseDate?.slice(0,10) || '-'}</TableCell>
-                          <TableCell>{a.warrantyEndDate?.slice(0,10) || '-'}</TableCell>
-                          <TableCell>
-                            <Switch checked={Boolean((a.metadata && a.metadata.active) || a.active)} onCheckedChange={(v) => toggleActive(a.id, !!v)} />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  {filteredAssets.length === 0 && (
-                    <div className="p-8 text-center text-slate-400">No assets found for this category</div>
-                  )}
-                </div>
-
-              </div>
-            </SheetContent>
-          </Sheet>
           <div className="flex items-center gap-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

@@ -113,6 +113,9 @@ export default function ITDashboard() {
   const [previewSecrets, setPreviewSecrets] = useState(false);
   const [previewFull, setPreviewFull] = useState(false);
 
+  // Controlled sheet for creating IT records (so notifications can open it)
+  const [showCreateITSheet, setShowCreateITSheet] = useState(false);
+
 
 
   // Create IT record (inline) state

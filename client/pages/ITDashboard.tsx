@@ -416,7 +416,7 @@ export default function ITDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label className="text-slate-300">Employee Name</Label>
-                      <Select value={newEmpId} onValueChange={setNewEmpId}>
+                      <Select value={newEmpId} onValueChange={setNewEmpId} disabled={lockPrefill}>
                         <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
                           <SelectValue placeholder="Select employee" />
                         </SelectTrigger>

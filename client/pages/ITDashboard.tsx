@@ -58,6 +58,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 interface ITRecord {
   id: string;

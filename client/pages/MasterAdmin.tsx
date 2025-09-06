@@ -560,25 +560,6 @@ export default function MasterAdmin() {
               </>
             )}
             <Button
-              onClick={() => {
-                setDbOpen(true);
-                setDbUnlocked(false);
-                setDbPassword("");
-              }}
-              variant="outline"
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
-            >
-              <Database className="h-4 w-4 mr-2" />
-              Database
-            </Button>
-            <Button
-              onClick={loadAllData}
-              className="bg-slate-600 hover:bg-slate-700 text-white flex items-center gap-2"
-            >
-              <Database className="h-4 w-4" />
-              Refresh Data
-            </Button>
-            <Button
               onClick={clearEmployeesAndITDemo}
               variant="destructive"
               className="flex items-center gap-2"

@@ -828,13 +828,6 @@ export default function MasterAdmin() {
                 >
                   IT Notifications
                 </TabsTrigger>
-                {/* Asset category quick filters */}
-                <TabsTrigger
-                  value="systemassets"
-                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
-                >
-                  All Assets
-                </TabsTrigger>
                 <TabsTrigger
                   value="mouse"
                   className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"

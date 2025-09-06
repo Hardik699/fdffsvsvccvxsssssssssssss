@@ -483,6 +483,7 @@ export default function ITDashboard() {
                       <Select
                         value={newTableNumber}
                         onValueChange={setNewTableNumber}
+                        disabled={lockPrefill}
                       >
                         <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
                           <SelectValue placeholder="Select table (1-32)" />

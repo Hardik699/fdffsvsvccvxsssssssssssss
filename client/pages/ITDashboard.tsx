@@ -394,9 +394,9 @@ export default function ITDashboard() {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-            <Sheet open={showCreateITSheet} onOpenChange={setShowCreateITSheet}>
+            <Sheet open={showCreateITSheet} onOpenChange={(o) => { setShowCreateITSheet(!!o); if (!o) setLockPrefill(false); }}>
               <SheetTrigger asChild>
-                <Button onClick={() => setShowCreateITSheet(true)} className="bg-blue-500 hover:bg-blue-600 text-white">
+                <Button onClick={() => { setShowCreateITSheet(true); setLockPrefill(false); }} className="bg-blue-500 hover:bg-blue-600 text-white">
                   Add IT Data
                 </Button>
               </SheetTrigger>

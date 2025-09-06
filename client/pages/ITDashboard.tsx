@@ -318,7 +318,7 @@ export default function ITDashboard() {
                 <div className="flex items-center justify-between">
                   <p className="text-slate-300">Manage device inventory and assignments</p>
                   <Button
-                    onClick={() => navigate("/gadgets-management")}
+                    onClick={() => setShowGadgetsPanel(true)}
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     Open
@@ -327,6 +327,65 @@ export default function ITDashboard() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Gadgets Viewer Sheet */}
+          <Sheet open={showGadgetsPanel} onOpenChange={setShowGadgetsPanel}>
+            <SheetContent side="right" className="bg-slate-900 border-slate-700 text-white w-[min(100%,900px)]">
+              <SheetHeader>
+                <SheetTitle>Gajets Inventory</SheetTitle>
+              </SheetHeader>
+              <div className="p-4 space-y-4">
+                <div className="flex gap-2 flex-wrap">
+                  {categories.map((c) => (
+                    <Button
+                      key={c}
+                      variant={selectedCategory === c ? undefined : "outline"}
+                      onClick={() => setSelectedCategory(c)}
+                      className="text-xs"
+                    >
+                      {c}
+                    </Button>
+                  ))}
+                  <Button variant={selectedCategory === 'all' ? undefined : 'outline'} onClick={() => setSelectedCategory('all') } className="text-xs">All</Button>
+                </div>
+
+                <div className="rounded-md border border-slate-700 p-2 overflow-auto max-h-[60vh]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Vendor</TableHead>
+                        <TableHead>Serial</TableHead>
+                        <TableHead>Purchase</TableHead>
+                        <TableHead>Warranty</TableHead>
+                        <TableHead>Active</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAssets.map((a) => (
+                        <TableRow key={a.id}>
+                          <TableCell className="font-mono">{a.id}</TableCell>
+                          <TableCell>{a.category}</TableCell>
+                          <TableCell>{a.vendorName}</TableCell>
+                          <TableCell className="font-mono">{a.serialNumber}</TableCell>
+                          <TableCell>{a.purchaseDate?.slice(0,10) || '-'}</TableCell>
+                          <TableCell>{a.warrantyEndDate?.slice(0,10) || '-'}</TableCell>
+                          <TableCell>
+                            <Switch checked={Boolean((a.metadata && a.metadata.active) || a.active)} onCheckedChange={(v) => toggleActive(a.id, !!v)} />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {filteredAssets.length === 0 && (
+                    <div className="p-8 text-center text-slate-400">No assets found for this category</div>
+                  )}
+                </div>
+
+              </div>
+            </SheetContent>
+          </Sheet>
           <div className="flex items-center gap-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

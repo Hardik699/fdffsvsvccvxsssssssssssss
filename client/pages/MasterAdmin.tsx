@@ -253,7 +253,7 @@ export default function MasterAdmin() {
       .catch(() => setHrConfigured(false));
   }, []);
 
-  const loadAllData = () => {
+  const loadAllData = async () => {
     try {
       setLoading(true);
 

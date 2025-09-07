@@ -782,7 +782,6 @@ export default function SystemInfoDetail() {
                         <TableHead>ID</TableHead>
                         <TableHead>Company</TableHead>
                         <TableHead>Serial Number</TableHead>
-                        <TableHead>Actions</TableHead>
                         {categoryKey === "ram" && (
                           <TableHead>RAM Size</TableHead>
                         )}
@@ -801,6 +800,7 @@ export default function SystemInfoDetail() {
                         <TableHead>Vendor</TableHead>
                         <TableHead>Purchase Date</TableHead>
                         <TableHead>Warranty End Date</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     )}
                   </TableHeader>

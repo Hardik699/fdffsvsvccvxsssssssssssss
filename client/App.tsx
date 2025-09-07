@@ -20,6 +20,7 @@ import PCLaptopInfo from "./pages/PCLaptopInfo";
 import DemoDataView from "./pages/DemoDataView";
 import MasterAdmin from "./pages/MasterAdmin";
 import DeployPage from "./pages/Deploy";
+import DatabaseSetup from "./pages/DatabaseSetup";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
           <Route path="/demo-data" element={<DemoDataView />} />
           <Route path="/master-admin" element={<MasterAdmin />} />
           <Route path="/deploy" element={<DeployPage />} />
+          <Route path="/database-setup" element={<DatabaseSetup />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

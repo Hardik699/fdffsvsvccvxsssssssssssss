@@ -351,7 +351,17 @@ export default function HRDashboard() {
       const savedAttendanceRecords = localStorage.getItem("attendanceRecords");
 
       if (savedEmployees) setEmployees(JSON.parse(savedEmployees));
-      if (savedDepartments) setDepartments(JSON.parse(savedDepartments));
+      if (savedDepartments) {
+        try {
+          const parsed = JSON.parse(savedDepartments) || [];
+          const deduped = Array.from(
+            new Map(parsed.map((d: any) => [d.id || d.name, d])).values(),
+          );
+          setDepartments(deduped);
+        } catch (err) {
+          setDepartments(JSON.parse(savedDepartments));
+        }
+      }
       if (savedLeaveRequests) setLeaveRequests(JSON.parse(savedLeaveRequests));
       if (savedSalaryRecords) setSalaryRecords(JSON.parse(savedSalaryRecords));
       if (savedAttendanceRecords)

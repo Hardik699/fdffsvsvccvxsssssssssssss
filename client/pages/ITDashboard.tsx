@@ -1020,8 +1020,8 @@ export default function ITDashboard() {
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800 border-slate-700 text-white">
                     <SelectItem value="all">All Departments</SelectItem>
-                    {departments.map((d) => (
-                      <SelectItem key={d.id} value={d.name}>
+                    {departments.map((d, i) => (
+                      <SelectItem key={`${d.id || d.name}-${i}`} value={d.name}>
                         {d.name}
                       </SelectItem>
                     ))}

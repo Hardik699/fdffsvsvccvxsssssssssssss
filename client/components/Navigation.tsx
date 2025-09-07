@@ -103,33 +103,49 @@ export default function AppNav() {
     return () => clearInterval(id);
   }, []);
 
+  // safeFetch: wraps fetch and returns an object similar to Response but never throws
+  async function safeFetch(url: string, opts?: RequestInit) {
+    try {
+      const res = await fetch(url, opts);
+      return res;
+    } catch (err) {
+      // Return a fallback object that mimics the Response interface used below
+      return {
+        ok: false,
+        status: 0,
+        json: async () => null,
+        text: async () => "",
+      } as unknown as Response;
+    }
+  }
+
   // Pull data from server periodically when DB is online
   const pullFromServer = async () => {
     if (dbStatus !== "online") return;
     try {
       const headers = { "Content-Type": "application/json", "x-role": "admin" } as const;
-      // Fetch assets, it accounts, employees, pc laptops
-      const [assetsR, itR, empR, pcR] = await Promise.allSettled([
-        fetch("/api/hr/assets", { headers }),
-        fetch("/api/hr/it-accounts", { headers }),
-        fetch("/api/hr/employees", { headers }),
-        fetch("/api/hr/pc-laptops", { headers }).catch(() => ({} as any)),
+      // Fetch assets, it accounts, employees, pc laptops using safeFetch to avoid throwing
+      const [assetsR, itR, empR, pcR] = await Promise.all([
+        safeFetch("/api/hr/assets", { headers }),
+        safeFetch("/api/hr/it-accounts", { headers }),
+        safeFetch("/api/hr/employees", { headers }),
+        safeFetch("/api/hr/pc-laptops", { headers }),
       ]);
 
-      if (assetsR.status === "fulfilled" && assetsR.value.ok) {
-        const j = await assetsR.value.json().catch(() => null);
+      if (assetsR && (assetsR as any).ok) {
+        const j = await (assetsR as Response).json().catch(() => null);
         if (j?.items) localStorage.setItem("systemAssets", JSON.stringify(j.items));
       }
-      if (itR.status === "fulfilled" && itR.value.ok) {
-        const j = await itR.value.json().catch(() => null);
+      if (itR && (itR as any).ok) {
+        const j = await (itR as Response).json().catch(() => null);
         if (j?.items) localStorage.setItem("itAccounts", JSON.stringify(j.items));
       }
-      if (empR.status === "fulfilled" && empR.value.ok) {
-        const j = await empR.value.json().catch(() => null);
+      if (empR && (empR as any).ok) {
+        const j = await (empR as Response).json().catch(() => null);
         if (j?.items) localStorage.setItem("hrEmployees", JSON.stringify(j.items));
       }
-      if (pcR.status === "fulfilled" && pcR.value.ok) {
-        const j = await pcR.value.json().catch(() => null);
+      if (pcR && (pcR as any).ok) {
+        const j = await (pcR as Response).json().catch(() => null);
         if (j?.items) localStorage.setItem("pcLaptopAssets", JSON.stringify(j.items));
       }
       setLastSync(new Date().toLocaleTimeString());

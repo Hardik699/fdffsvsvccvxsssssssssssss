@@ -562,12 +562,12 @@ export default function ITDashboard() {
                           <SelectValue placeholder="Select department" />
                         </SelectTrigger>
                         <SelectContent className="bg-slate-800 border-slate-700 text-white max-h-64">
-                          {departments.map((d) => (
-                            <SelectItem key={d.id} value={d.name}>
-                              {d.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
+                    {departments.map((d, i) => (
+                      <SelectItem key={`${d.id || d.name}-${i}`} value={d.name}>
+                        {d.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">

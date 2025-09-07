@@ -1118,85 +1118,17 @@ Generated on: ${new Date().toLocaleString()}
     const seeded = localStorage.getItem("demoEmployeesSeeded");
     if (seeded) return;
 
-    // Load richer demo employees (5 users with photo and doc placeholders)
-    try {
-      // lazy-load utility to avoid circular imports in some environments
-      const mod = await import("@/lib/createDemoData");
-      const added = mod.loadDemoEmployees();
-      if (added && added.length) {
-        // mark seeded so we don't re-add next time
-        localStorage.setItem("demoEmployeesSeeded", "1");
+    (async () => {
+      try {
+        const mod = await import("@/lib/createDemoData");
+        const added = mod.loadDemoEmployees();
+        if (added && added.length) {
+          localStorage.setItem("demoEmployeesSeeded", "1");
+        }
+      } catch (err) {
+        console.debug("Failed to seed demo employees", err);
       }
-    } catch (err) {
-      console.debug("Failed to seed demo employees", err);
-    }
-
-    return;
-
-    const newEmployees = [emp1, emp2];
-    const updatedEmployees = [...savedEmployees, ...newEmployees];
-    saveEmployees(updatedEmployees);
-
-    const deptCounts = (name: string) =>
-      updatedEmployees.filter(
-        (e) => e.department === name && e.status === "active",
-      ).length;
-    if (savedDepartments.length === 0) {
-      const defaultDepartments: Department[] = [
-        {
-          id: "1",
-          name: "Engineering",
-          manager: "John Smith",
-          employeeCount: 0,
-        },
-        {
-          id: "2",
-          name: "Marketing",
-          manager: "Sarah Johnson",
-          employeeCount: 0,
-        },
-        { id: "3", name: "Sales", manager: "Mike Davis", employeeCount: 0 },
-        { id: "4", name: "HR", manager: "Lisa Wilson", employeeCount: 0 },
-        { id: "5", name: "Finance", manager: "David Brown", employeeCount: 0 },
-        {
-          id: "6",
-          name: "Operations",
-          manager: "Emma Wilson",
-          employeeCount: 0,
-        },
-      ];
-      const seededDepartments = defaultDepartments.map((d) => ({
-        ...d,
-        employeeCount: deptCounts(d.name),
-      }));
-      saveDepartments(seededDepartments);
-    } else {
-      const updatedDepartments = savedDepartments.map((d) => ({
-        ...d,
-        employeeCount: deptCounts(d.name),
-      }));
-      saveDepartments(updatedDepartments);
-    }
-
-    const pending = JSON.parse(
-      localStorage.getItem("pendingITNotifications") || "[]",
-    );
-    const newNotifs = newEmployees.map((employee) => ({
-      id: employee.id,
-      employeeId: employee.id,
-      employeeName: employee.fullName,
-      department: employee.department,
-      tableNumber: employee.tableNumber,
-      email: employee.email,
-      createdAt: new Date().toISOString(),
-      processed: false,
-    }));
-    localStorage.setItem(
-      "pendingITNotifications",
-      JSON.stringify([...pending, ...newNotifs]),
-    );
-
-    localStorage.setItem("demoEmployeesSeeded", "1");
+    })();
   }, [userRole]);
 
   // Load employees from DB (if available) and sync local copy

@@ -454,29 +454,93 @@ export default function MasterAdmin() {
       const pcs = masterData.pcLaptopAssets || [];
       const it = masterData.itAccounts || [];
       const notifs = masterData.pendingITNotifications || [];
+      const employees = masterData.employees || [];
+      const departments = masterData.departments || [];
+      const leaveRequests = masterData.leaveRequests || [];
+      const attendance = masterData.attendanceRecords || [];
+      const salaryRecords = masterData.salaryRecords || [];
 
-      const wsSys = XLSX.utils.json_to_sheet(sys);
-      XLSX.utils.book_append_sheet(wb, wsSys, "System_Assets");
+      // Helper to safely append sheet with limited name length
+      const appendSheet = (name: string, data: any[]) => {
+        const safeName = name.substring(0, 31);
+        const ws = XLSX.utils.json_to_sheet(data || []);
+        XLSX.utils.book_append_sheet(wb, ws, safeName);
+      };
 
-      const wsPcs = XLSX.utils.json_to_sheet(pcs);
-      XLSX.utils.book_append_sheet(wb, wsPcs, "PC_Laptops");
+      // Core sheets
+      appendSheet("Employees", employees);
+      appendSheet("Departments", departments);
+      appendSheet("LeaveRequests", leaveRequests);
+      appendSheet("Attendance", attendance);
+      appendSheet("SalaryRecords", salaryRecords);
+
+      appendSheet("System_Assets", sys);
+      appendSheet("PC_Laptops", pcs);
 
       const itFlat = it.map((r) => ({
-        ...r,
+        id: r.id,
+        employeeId: r.employeeId,
+        employeeName: r.employeeName,
+        systemId: r.systemId,
+        department: r.department,
+        tableNumber: r.tableNumber,
+        vitelProvider: r.vitelGlobal?.provider,
+        vitelId: r.vitelGlobal?.id,
+        lmPlayerId: r.lmPlayer?.id,
+        lmLicense: r.lmPlayer?.license,
         emails: Array.isArray(r.emails)
           ? r.emails.map((e: any) => `${e.provider}:${e.email}`).join("; ")
           : "",
+        createdAt: r.createdAt,
       }));
-      const wsIT = XLSX.utils.json_to_sheet(itFlat);
-      XLSX.utils.book_append_sheet(wb, wsIT, "IT_Accounts");
+      appendSheet("IT_Accounts", itFlat);
+      appendSheet("IT_Notifications", notifs);
 
-      const wsNotif = XLSX.utils.json_to_sheet(notifs);
-      XLSX.utils.book_append_sheet(wb, wsNotif, "IT_Notifications");
+      // Append category-specific sheets based on systemAssets categories
+      const categories = Array.from(
+        new Set(sys.map((s: any) => (s.category || "").toString())),
+      ).filter(Boolean);
 
-      XLSX.writeFile(
-        wb,
-        `it-data-${new Date().toISOString().split("T")[0]}.xlsx`,
-      );
+      for (const cat of categories) {
+        const rows = sys.filter((s: any) => String(s.category) === String(cat));
+        // Normalize keys for better Excel readability
+        const normalized = rows.map((r: any) => ({
+          id: r.id,
+          category: r.category,
+          vendor: r.vendorName,
+          company: r.companyName || "",
+          serialNumber: r.serialNumber || r.serial || "",
+          purchaseDate: r.purchaseDate,
+          warrantyEndDate: r.warrantyEndDate,
+          number: r.vonageNumber || r.vitelNumber || r.number || "",
+          extCode: r.vonageExtCode || r.vitelExtCode || r.ext_code || "",
+          password: r.vonagePassword || r.vitelPassword || r.password || "",
+          metadata: r.metadata || "",
+          createdAt: r.createdAt,
+        }));
+        // Sheet name as Category_<name>
+        const sheetName = `Category_${String(cat)}`.substring(0, 31);
+        appendSheet(sheetName, normalized);
+      }
+
+      // Also include a flattened view of PC/Laptops with resolved asset names
+      const pcFlattened = (pcs || []).map((p: any) => ({
+        id: p.id,
+        mouse: getAssetDetails(p.mouseId || "") ,
+        keyboard: getAssetDetails(p.keyboardId || ""),
+        motherboard: getAssetDetails(p.motherboardId || ""),
+        camera: getAssetDetails(p.cameraId || ""),
+        headphone: getAssetDetails(p.headphoneId || ""),
+        powerSupply: getAssetDetails(p.powerSupplyId || ""),
+        storage: getAssetDetails(p.storageId || ""),
+        ram1: getAssetDetails(p.ramId || ""),
+        ram2: getAssetDetails(p.ramId2 || ""),
+        createdAt: p.createdAt,
+      }));
+      appendSheet("PC_Laptops_Flat", pcFlattened);
+
+      const fileName = `master-data-${new Date().toISOString().split("T")[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
     } catch (error) {
       console.error("Excel export error:", error);
       alert("Error exporting to Excel. Please try again.");

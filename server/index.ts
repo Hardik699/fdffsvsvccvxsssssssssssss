@@ -10,6 +10,7 @@ import {
   syncMasterDataToGoogleSheets,
   getHRSpreadsheetInfo,
   syncHRDataToGoogleSheets,
+  syncMasterDataFromDb,
 } from "./services/googleSheets";
 
 const HAS_DB = !!(

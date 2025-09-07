@@ -184,8 +184,6 @@ export default function SystemInfoDetail() {
 
   const [seedTried, setSeedTried] = useState(false);
 
-  const location = useLocation();
-  const [openedFromQuery, setOpenedFromQuery] = useState(false);
 
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);

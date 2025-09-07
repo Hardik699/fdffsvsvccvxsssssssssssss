@@ -1121,8 +1121,9 @@ Generated on: ${new Date().toLocaleString()}
     (async () => {
       try {
         const mod = await import("@/lib/createDemoData");
+        const assetsAdded = mod.loadDemoData();
         const added = mod.loadDemoEmployees();
-        if (added && added.length) {
+        if ((assetsAdded && assetsAdded.length) || (added && added.length)) {
           localStorage.setItem("demoEmployeesSeeded", "1");
         }
       } catch (err) {

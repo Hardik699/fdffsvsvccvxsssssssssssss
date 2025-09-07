@@ -460,10 +460,59 @@ export default function MasterAdmin() {
       const attendance = masterData.attendanceRecords || [];
       const salaryRecords = masterData.salaryRecords || [];
 
-      // Helper to safely append sheet with limited name length
+      // Helper: remove keys that are empty across all rows and mask sensitive fields
+      const filterEmptyAndMask = (rows: any[]) => {
+        if (!Array.isArray(rows) || rows.length === 0) return [];
+        const keys = Array.from(rows.reduce((s, r) => {
+          Object.keys(r || {}).forEach((k) => s.add(k));
+          return s;
+        }, new Set<string>()));
+
+        const keepKeys = keys.filter((k) => {
+          return rows.some((r) => {
+            const v = r?.[k];
+            if (v === null || v === undefined) return false;
+            if (typeof v === 'string') return v.trim() !== '';
+            if (Array.isArray(v)) return v.length > 0;
+            if (typeof v === 'object') return Object.keys(v).length > 0;
+            return true;
+          });
+        });
+
+        // mask sensitive fields
+        const sensitivePatterns = [/password/i, /secret/i, /metadata/i];
+
+        return rows.map((r) => {
+          const out: any = {};
+          for (const k of keepKeys) {
+            let val = r?.[k];
+            if (val === undefined) val = '';
+            // mask if key matches sensitive patterns
+            if (sensitivePatterns.some((p) => p.test(k))) {
+              if (val === null || val === undefined || String(val).trim() === '') out[k] = '';
+              else out[k] = '••••••';
+              continue;
+            }
+            // for nested objects/arrays, stringify for Excel readability
+            if (Array.isArray(val) || typeof val === 'object') {
+              try {
+                out[k] = JSON.stringify(val);
+              } catch (e) {
+                out[k] = String(val);
+              }
+            } else {
+              out[k] = val;
+            }
+          }
+          return out;
+        });
+      };
+
+      // Helper to safely append sheet with limited name length and filtered columns
       const appendSheet = (name: string, data: any[]) => {
         const safeName = name.substring(0, 31);
-        const ws = XLSX.utils.json_to_sheet(data || []);
+        const filtered = filterEmptyAndMask(data || []);
+        const ws = XLSX.utils.json_to_sheet(filtered);
         XLSX.utils.book_append_sheet(wb, ws, safeName);
       };
 
@@ -474,7 +523,7 @@ export default function MasterAdmin() {
       appendSheet("Attendance", attendance);
       appendSheet("SalaryRecords", salaryRecords);
 
-      // Sanitize system assets to avoid exporting sensitive or large metadata fields
+      // Sanitize system assets (remove raw password/metadata) but filter empty cols
       const sanitizedSys = (sys || []).map((s: any) => {
         const { vonagePassword, vitelPassword, password, metadata, ...rest } = s || {};
         return rest;
@@ -503,11 +552,11 @@ export default function MasterAdmin() {
 
       // Append category-specific sheets based on systemAssets categories
       const categories = Array.from(
-        new Set(sys.map((s: any) => (s.category || "").toString())),
+        new Set(sanitizedSys.map((s: any) => (s.category || "").toString())),
       ).filter(Boolean);
 
       for (const cat of categories) {
-        const rows = sys.filter((s: any) => String(s.category) === String(cat));
+        const rows = sanitizedSys.filter((s: any) => String(s.category) === String(cat));
         // Normalize keys for better Excel readability
         const normalized = rows.map((r: any) => ({
           id: r.id,

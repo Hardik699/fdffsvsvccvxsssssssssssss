@@ -207,7 +207,15 @@ export default function ITDashboard() {
     const pending = localStorage.getItem("pendingITNotifications");
     if (its) setRecords(JSON.parse(its));
     if (emps) setEmployees(JSON.parse(emps));
-    if (depts) setDepartments(JSON.parse(depts));
+    if (depts) {
+      try {
+        const parsed = JSON.parse(depts) || [];
+        const deduped = Array.from(new Map(parsed.map((d: any) => [d.id || d.name, d])).values());
+        setDepartments(deduped);
+      } catch (err) {
+        setDepartments(JSON.parse(depts));
+      }
+    }
     if (pending) {
       const notifications = JSON.parse(pending);
       // Only show unprocessed notifications

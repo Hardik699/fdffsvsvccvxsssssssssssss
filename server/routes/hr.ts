@@ -410,7 +410,7 @@ const createItAccount: RequestHandler = async (req, res, next) => {
 const deleteItAccount: RequestHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
-    if (!id) return res.status(400).json({ error: 'Missing id' });
+    if (!id) return res.status(400).json({ error: "Missing id" });
     await pool.query(`DELETE FROM it_accounts WHERE id = $1`, [id]);
     res.json({ id });
   } catch (err) {

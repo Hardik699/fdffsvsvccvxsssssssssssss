@@ -123,7 +123,10 @@ export default function AppNav() {
   const pullFromServer = async () => {
     if (dbStatus !== "online") return;
     try {
-      const headers = { "Content-Type": "application/json", "x-role": "admin" } as const;
+      const headers = {
+        "Content-Type": "application/json",
+        "x-role": "admin",
+      } as const;
       // Fetch assets, it accounts, employees, pc laptops using safeFetch to avoid throwing
       const [assetsR, itR, empR, pcR] = await Promise.all([
         safeFetch("/api/hr/assets", { headers }),
@@ -134,19 +137,23 @@ export default function AppNav() {
 
       if (assetsR && (assetsR as any).ok) {
         const j = await (assetsR as Response).json().catch(() => null);
-        if (j?.items) localStorage.setItem("systemAssets", JSON.stringify(j.items));
+        if (j?.items)
+          localStorage.setItem("systemAssets", JSON.stringify(j.items));
       }
       if (itR && (itR as any).ok) {
         const j = await (itR as Response).json().catch(() => null);
-        if (j?.items) localStorage.setItem("itAccounts", JSON.stringify(j.items));
+        if (j?.items)
+          localStorage.setItem("itAccounts", JSON.stringify(j.items));
       }
       if (empR && (empR as any).ok) {
         const j = await (empR as Response).json().catch(() => null);
-        if (j?.items) localStorage.setItem("hrEmployees", JSON.stringify(j.items));
+        if (j?.items)
+          localStorage.setItem("hrEmployees", JSON.stringify(j.items));
       }
       if (pcR && (pcR as any).ok) {
         const j = await (pcR as Response).json().catch(() => null);
-        if (j?.items) localStorage.setItem("pcLaptopAssets", JSON.stringify(j.items));
+        if (j?.items)
+          localStorage.setItem("pcLaptopAssets", JSON.stringify(j.items));
       }
       setLastSync(new Date().toLocaleTimeString());
     } catch (e) {
@@ -359,7 +366,7 @@ export default function AppNav() {
                       onClick={syncAll}
                       disabled={syncing}
                       title={lastSync ? `Last sync: ${lastSync}` : "Sync to DB"}
-                      className={`transition-all duration-300 ${dbStatus === 'online' ? 'border-green-500 text-green-300 hover:bg-green-700 hover:text-white' : dbStatus === 'offline' ? 'border-red-500 text-red-300 hover:bg-red-700 hover:text-white' : 'border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white'}`}
+                      className={`transition-all duration-300 ${dbStatus === "online" ? "border-green-500 text-green-300 hover:bg-green-700 hover:text-white" : dbStatus === "offline" ? "border-red-500 text-red-300 hover:bg-red-700 hover:text-white" : "border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white"}`}
                     >
                       <RefreshCw
                         className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`}
@@ -385,7 +392,10 @@ export default function AppNav() {
                     className="bg-slate-800 border-slate-700 text-white"
                     align="end"
                   >
-                    <DropdownMenuItem className="focus:bg-slate-700 cursor-pointer" onClick={handleViewUsers}>
+                    <DropdownMenuItem
+                      className="focus:bg-slate-700 cursor-pointer"
+                      onClick={handleViewUsers}
+                    >
                       <Users className="h-4 w-4 mr-2" />
                       View Users
                     </DropdownMenuItem>

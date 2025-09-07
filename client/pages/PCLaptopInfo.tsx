@@ -100,24 +100,30 @@ export default function PCLaptopInfo() {
       const pcRaw = localStorage.getItem(STORAGE_KEY);
       const pcs: Asset[] = pcRaw ? JSON.parse(pcRaw) : [];
       pcs.forEach((p) => {
-        ([
-          "mouseId",
-          "keyboardId",
-          "motherboardId",
-          "cameraId",
-          "headphoneId",
-          "powerSupplyId",
-          "storageId",
-          "ramId",
-          "ramId2",
-        ] as (keyof Asset)[]).forEach((k) => {
+        (
+          [
+            "mouseId",
+            "keyboardId",
+            "motherboardId",
+            "cameraId",
+            "headphoneId",
+            "powerSupplyId",
+            "storageId",
+            "ramId",
+            "ramId2",
+          ] as (keyof Asset)[]
+        ).forEach((k) => {
           const v = p[k];
           if (v && v !== "none") used.add(String(v));
         });
       });
 
       // asset assignments stored under several possible keys - check them
-      const assignmentKeys = ["asset_assignments", "assetAssignments", "assignments"];
+      const assignmentKeys = [
+        "asset_assignments",
+        "assetAssignments",
+        "assignments",
+      ];
       for (const key of assignmentKeys) {
         const raw = localStorage.getItem(key);
         if (!raw) continue;
@@ -272,7 +278,7 @@ export default function PCLaptopInfo() {
     try {
       const sysRaw = localStorage.getItem(SYS_STORAGE_KEY);
       const sysList: SysAsset[] = sysRaw ? JSON.parse(sysRaw) : [];
-        const usedMouseIds = getUsedIds(remaining, "mouseId");
+      const usedMouseIds = getUsedIds(remaining, "mouseId");
       const usedKeyboardIds = getUsedIds(remaining, "keyboardId");
       const usedMotherboardIds = getUsedIds(remaining, "motherboardId");
       const usedCameraIds = getUsedIds(remaining, "cameraId");
@@ -299,14 +305,54 @@ export default function PCLaptopInfo() {
         if (!usedRamIds.includes(id)) usedRamIds.push(id);
       });
 
-      setMouseAssets(getAvailableAssets(sysList.filter((s) => s.category === "mouse"), usedMouseIds));
-      setKeyboardAssets(getAvailableAssets(sysList.filter((s) => s.category === "keyboard"), usedKeyboardIds));
-      setMotherboardAssets(getAvailableAssets(sysList.filter((s) => s.category === "motherboard"), usedMotherboardIds));
-      setCameraAssets(getAvailableAssets(sysList.filter((s) => s.category === "camera"), usedCameraIds));
-      setHeadphoneAssets(getAvailableAssets(sysList.filter((s) => s.category === "headphone"), usedHeadphoneIds));
-      setPowerSupplyAssets(getAvailableAssets(sysList.filter((s) => s.category === "power-supply"), usedPowerSupplyIds));
-      setStorageAssets(getAvailableAssets(sysList.filter((s) => s.category === "storage"), usedStorageIds));
-      setRamAssets(getAvailableAssets(sysList.filter((s) => s.category === "ram"), usedRamIds));
+      setMouseAssets(
+        getAvailableAssets(
+          sysList.filter((s) => s.category === "mouse"),
+          usedMouseIds,
+        ),
+      );
+      setKeyboardAssets(
+        getAvailableAssets(
+          sysList.filter((s) => s.category === "keyboard"),
+          usedKeyboardIds,
+        ),
+      );
+      setMotherboardAssets(
+        getAvailableAssets(
+          sysList.filter((s) => s.category === "motherboard"),
+          usedMotherboardIds,
+        ),
+      );
+      setCameraAssets(
+        getAvailableAssets(
+          sysList.filter((s) => s.category === "camera"),
+          usedCameraIds,
+        ),
+      );
+      setHeadphoneAssets(
+        getAvailableAssets(
+          sysList.filter((s) => s.category === "headphone"),
+          usedHeadphoneIds,
+        ),
+      );
+      setPowerSupplyAssets(
+        getAvailableAssets(
+          sysList.filter((s) => s.category === "power-supply"),
+          usedPowerSupplyIds,
+        ),
+      );
+      setStorageAssets(
+        getAvailableAssets(
+          sysList.filter((s) => s.category === "storage"),
+          usedStorageIds,
+        ),
+      );
+      setRamAssets(
+        getAvailableAssets(
+          sysList.filter((s) => s.category === "ram"),
+          usedRamIds,
+        ),
+      );
     } catch (err) {
       // ignore
     }
@@ -1145,10 +1191,18 @@ export default function PCLaptopInfo() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <Button size="sm" variant="ghost" onClick={() => openForm(a)}>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => openForm(a)}
+                            >
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleRemove(a.id)}>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleRemove(a.id)}
+                            >
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>

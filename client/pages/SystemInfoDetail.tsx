@@ -186,7 +186,6 @@ export default function SystemInfoDetail() {
 
   const [seedTried, setSeedTried] = useState(false);
 
-
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
     setAssets(raw ? JSON.parse(raw) : []);
@@ -212,7 +211,6 @@ export default function SystemInfoDetail() {
       })
       .catch(() => {});
   }, [filtered.length, seedTried]);
-
 
   const openForm = () => {
     const id = nextWxId(assets, categoryKey);
@@ -301,7 +299,9 @@ export default function SystemInfoDetail() {
 
     // if editing an existing asset, replace it; otherwise add to front
     const exists = assets.find((x) => x.id === record.id);
-    const next = exists ? assets.map((x) => (x.id === record.id ? record : x)) : [record, ...assets];
+    const next = exists
+      ? assets.map((x) => (x.id === record.id ? record : x))
+      : [record, ...assets];
     setAssets(next);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     // Sync to Neon DB
@@ -829,10 +829,18 @@ export default function SystemInfoDetail() {
                           <TableCell>{a.warrantyEndDate}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Button size="sm" variant="ghost" onClick={() => handleEdit(a)}>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEdit(a)}
+                              >
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button size="sm" variant="destructive" onClick={() => handleRemove(a.id)}>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleRemove(a.id)}
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
@@ -869,10 +877,18 @@ export default function SystemInfoDetail() {
                           <TableCell>{a.warrantyEndDate}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <Button size="sm" variant="ghost" onClick={() => handleEdit(a)}>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEdit(a)}
+                              >
                                 <Pencil className="h-4 w-4" />
                               </Button>
-                              <Button size="sm" variant="destructive" onClick={() => handleRemove(a.id)}>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleRemove(a.id)}
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>

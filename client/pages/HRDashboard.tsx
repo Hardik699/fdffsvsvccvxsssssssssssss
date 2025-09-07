@@ -354,13 +354,20 @@ export default function HRDashboard() {
       if (savedDepartments) {
         try {
           const parsed = JSON.parse(savedDepartments) || [];
-          const normalized = (Array.isArray(parsed) ? parsed : []).map((d: any, idx: number) => ({
-            id:
-              d?.id || `${String(d?.name || "dept").trim().toLowerCase().replace(/\s+/g, "-")}-${idx}`,
-            name: String(d?.name || "").trim(),
-            manager: d?.manager || "",
-            employeeCount: typeof d?.employeeCount === "number" ? d.employeeCount : 0,
-          }));
+          const normalized = (Array.isArray(parsed) ? parsed : []).map(
+            (d: any, idx: number) => ({
+              id:
+                d?.id ||
+                `${String(d?.name || "dept")
+                  .trim()
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")}-${idx}`,
+              name: String(d?.name || "").trim(),
+              manager: d?.manager || "",
+              employeeCount:
+                typeof d?.employeeCount === "number" ? d.employeeCount : 0,
+            }),
+          );
           const dedupedMap = new Map<string, any>();
           normalized.forEach((d: any) => {
             const key = String(d.name).trim().toLowerCase();
@@ -375,7 +382,6 @@ export default function HRDashboard() {
       if (savedSalaryRecords) setSalaryRecords(JSON.parse(savedSalaryRecords));
       if (savedAttendanceRecords)
         setAttendanceRecords(JSON.parse(savedAttendanceRecords));
-
 
       // Initialize with default departments if none exist
       if (!savedDepartments) {
@@ -1679,7 +1685,10 @@ Generated on: ${new Date().toLocaleString()}
                             </SelectTrigger>
                             <SelectContent className="bg-slate-800 border-slate-700 text-white">
                               {departments.map((dept, i) => (
-                                <SelectItem key={`${dept.id || dept.name}-${i}`} value={dept.name}>
+                                <SelectItem
+                                  key={`${dept.id || dept.name}-${i}`}
+                                  value={dept.name}
+                                >
                                   {dept.name}
                                 </SelectItem>
                               ))}
@@ -2111,7 +2120,10 @@ Generated on: ${new Date().toLocaleString()}
                       <SelectContent className="bg-slate-800 border-slate-700 text-white">
                         <SelectItem value="all">All Departments</SelectItem>
                         {departments.map((dept, i) => (
-                          <SelectItem key={`${dept.id || dept.name}-${i}`} value={dept.name}>
+                          <SelectItem
+                            key={`${dept.id || dept.name}-${i}`}
+                            value={dept.name}
+                          >
                             {dept.name} (
                             {getEmployeesByDepartment(dept.name).length})
                           </SelectItem>
@@ -3354,12 +3366,15 @@ Generated on: ${new Date().toLocaleString()}
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="bg-slate-800 border-slate-700 text-white">
-                              {departments.map((dept, i) => (
-                                <SelectItem key={`${dept.id || dept.name}-${i}`} value={dept.name}>
-                                  {dept.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
+                            {departments.map((dept, i) => (
+                              <SelectItem
+                                key={`${dept.id || dept.name}-${i}`}
+                                value={dept.name}
+                              >
+                                {dept.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
                         </Select>
                       ) : (
                         <p className="text-white p-2 bg-slate-800/30 rounded border border-slate-700">

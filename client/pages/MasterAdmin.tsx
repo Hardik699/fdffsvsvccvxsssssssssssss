@@ -269,13 +269,23 @@ export default function MasterAdmin() {
         const parsed = Array.isArray(departments) ? departments : [];
         const normalized = (parsed || []).map((d: any, idx: number) => ({
           id:
-            d?.id || `${String(d?.name || "dept").trim().toLowerCase().replace(/\s+/g, "-")}-${idx}`,
+            d?.id ||
+            `${String(d?.name || "dept")
+              .trim()
+              .toLowerCase()
+              .replace(/\s+/g, "-")}-${idx}`,
           name: String(d?.name || "").trim(),
           manager: d?.manager || "",
-          employeeCount: typeof d?.employeeCount === "number" ? d.employeeCount : 0,
+          employeeCount:
+            typeof d?.employeeCount === "number" ? d.employeeCount : 0,
         }));
         const deduped = Array.from(
-          new Map(normalized.map((d: any) => [String(d.name).trim().toLowerCase(), d])).values(),
+          new Map(
+            normalized.map((d: any) => [
+              String(d.name).trim().toLowerCase(),
+              d,
+            ]),
+          ).values(),
         );
         departments = deduped;
       } catch (err) {
@@ -310,7 +320,10 @@ export default function MasterAdmin() {
 
       // Attempt to load server-backed data when available (Neon/Postgres)
       try {
-        const headers = { "Content-Type": "application/json", "x-role": "admin" } as const;
+        const headers = {
+          "Content-Type": "application/json",
+          "x-role": "admin",
+        } as const;
         // Fetch assets from server (if DB connected)
         const [assetsResp, itResp, empResp] = await Promise.allSettled([
           fetch("/api/hr/assets", { headers }),
@@ -463,18 +476,20 @@ export default function MasterAdmin() {
       // Helper: remove keys that are empty across all rows and mask sensitive fields
       const filterEmptyAndMask = (rows: any[]) => {
         if (!Array.isArray(rows) || rows.length === 0) return [];
-        const keys = Array.from(rows.reduce((s, r) => {
-          Object.keys(r || {}).forEach((k) => s.add(k));
-          return s;
-        }, new Set<string>()));
+        const keys = Array.from(
+          rows.reduce((s, r) => {
+            Object.keys(r || {}).forEach((k) => s.add(k));
+            return s;
+          }, new Set<string>()),
+        );
 
         const keepKeys = keys.filter((k) => {
           return rows.some((r) => {
             const v = r?.[k];
             if (v === null || v === undefined) return false;
-            if (typeof v === 'string') return v.trim() !== '';
+            if (typeof v === "string") return v.trim() !== "";
             if (Array.isArray(v)) return v.length > 0;
-            if (typeof v === 'object') return Object.keys(v).length > 0;
+            if (typeof v === "object") return Object.keys(v).length > 0;
             return true;
           });
         });
@@ -486,15 +501,20 @@ export default function MasterAdmin() {
           const out: any = {};
           for (const k of keepKeys) {
             let val = r?.[k];
-            if (val === undefined) val = '';
+            if (val === undefined) val = "";
             // mask if key matches sensitive patterns
             if (sensitivePatterns.some((p) => p.test(k))) {
-              if (val === null || val === undefined || String(val).trim() === '') out[k] = '';
-              else out[k] = '••••••';
+              if (
+                val === null ||
+                val === undefined ||
+                String(val).trim() === ""
+              )
+                out[k] = "";
+              else out[k] = "••••••";
               continue;
             }
             // for nested objects/arrays, stringify for Excel readability
-            if (Array.isArray(val) || typeof val === 'object') {
+            if (Array.isArray(val) || typeof val === "object") {
               try {
                 out[k] = JSON.stringify(val);
               } catch (e) {
@@ -525,7 +545,8 @@ export default function MasterAdmin() {
 
       // Sanitize system assets (remove raw password/metadata) but filter empty cols
       const sanitizedSys = (sys || []).map((s: any) => {
-        const { vonagePassword, vitelPassword, password, metadata, ...rest } = s || {};
+        const { vonagePassword, vitelPassword, password, metadata, ...rest } =
+          s || {};
         return rest;
       });
       appendSheet("System_Assets", sanitizedSys);
@@ -556,7 +577,9 @@ export default function MasterAdmin() {
       ).filter(Boolean);
 
       for (const cat of categories) {
-        const rows = sanitizedSys.filter((s: any) => String(s.category) === String(cat));
+        const rows = sanitizedSys.filter(
+          (s: any) => String(s.category) === String(cat),
+        );
         // Normalize keys for better Excel readability
         const normalized = rows.map((r: any) => ({
           id: r.id,
@@ -579,7 +602,7 @@ export default function MasterAdmin() {
       // Also include a flattened view of PC/Laptops with resolved asset names
       const pcFlattened = (pcs || []).map((p: any) => ({
         id: p.id,
-        mouse: getAssetDetails(p.mouseId || "") ,
+        mouse: getAssetDetails(p.mouseId || ""),
         keyboard: getAssetDetails(p.keyboardId || ""),
         motherboard: getAssetDetails(p.motherboardId || ""),
         camera: getAssetDetails(p.cameraId || ""),

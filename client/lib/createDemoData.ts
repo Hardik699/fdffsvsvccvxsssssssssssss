@@ -375,13 +375,16 @@ export function loadDemoEmployees() {
   // also ensure departments exist
   const deptsRaw = localStorage.getItem("departments");
   const depts = deptsRaw ? JSON.parse(deptsRaw) : [];
-  const needed = Array.from(new Set(demo.map((d) => d.department))).map((name, idx) => ({ id: `D-${name}`, name }));
+  const needed = Array.from(new Set(demo.map((d) => d.department))).map(
+    (name, idx) => ({ id: `D-${name}`, name }),
+  );
   // Merge and dedupe departments by normalized name
   const mergedMap = new Map<string, any>();
   [...needed, ...depts].forEach((d: any) => {
     const name = String(d?.name || "").trim();
     const key = name.toLowerCase();
-    if (!mergedMap.has(key)) mergedMap.set(key, { id: d?.id || `D-${name}`, name });
+    if (!mergedMap.has(key))
+      mergedMap.set(key, { id: d?.id || `D-${name}`, name });
   });
   const mergedDepts = Array.from(mergedMap.values());
   localStorage.setItem("departments", JSON.stringify(mergedDepts));

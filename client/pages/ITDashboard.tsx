@@ -119,11 +119,16 @@ export default function ITDashboard() {
   // When true (opened from a notification) certain fields are fixed and cannot be edited
   const [lockPrefill, setLockPrefill] = useState(false);
 
-
-
   // Create IT record (inline) state
   type NewEmailRow = {
-    provider: "CUSTOM" | "NSIT" | "LP" | "MS" | "ORWIN" | "VITEL_GLOBAL" | "VONAGE";
+    provider:
+      | "CUSTOM"
+      | "NSIT"
+      | "LP"
+      | "MS"
+      | "ORWIN"
+      | "VITEL_GLOBAL"
+      | "VONAGE";
     providerCustom?: string;
     providerId?: string;
     email: string;
@@ -139,7 +144,13 @@ export default function ITDashboard() {
   const [newLmId, setNewLmId] = useState("");
   const [newLmPassword, setNewLmPassword] = useState("");
   const [newEmails, setNewEmails] = useState<NewEmailRow[]>([
-    { provider: "CUSTOM", providerCustom: "", providerId: "", email: "", password: "" },
+    {
+      provider: "CUSTOM",
+      providerCustom: "",
+      providerId: "",
+      email: "",
+      password: "",
+    },
   ]);
   const [showPw, setShowPw] = useState(false);
   const [newNotes, setNewNotes] = useState("");
@@ -179,10 +190,14 @@ export default function ITDashboard() {
     const raw = localStorage.getItem(STORAGE_KEY);
     const assets = raw ? (JSON.parse(raw) as any[]) : [];
     if (provider === "VITEL_GLOBAL") {
-      return assets.filter((a: any) => a.category === "vitel-global").map((a: any) => a.id);
+      return assets
+        .filter((a: any) => a.category === "vitel-global")
+        .map((a: any) => a.id);
     }
     if (provider === "VONAGE") {
-      return assets.filter((a: any) => a.category === "vonage").map((a: any) => a.vonageExtCode || a.vonageNumber || a.id);
+      return assets
+        .filter((a: any) => a.category === "vonage")
+        .map((a: any) => a.vonageExtCode || a.vonageNumber || a.id);
     }
     return [];
   }
@@ -211,11 +226,17 @@ export default function ITDashboard() {
     if (depts) {
       try {
         const parsed = JSON.parse(depts) || [];
-        const normalized = (Array.isArray(parsed) ? parsed : []).map((d: any, idx: number) => ({
-          id:
-            d?.id || `${String(d?.name || "dept").trim().toLowerCase().replace(/\s+/g, "-")}-${idx}`,
-          name: String(d?.name || "").trim(),
-        }));
+        const normalized = (Array.isArray(parsed) ? parsed : []).map(
+          (d: any, idx: number) => ({
+            id:
+              d?.id ||
+              `${String(d?.name || "dept")
+                .trim()
+                .toLowerCase()
+                .replace(/\s+/g, "-")}-${idx}`,
+            name: String(d?.name || "").trim(),
+          }),
+        );
         const dedupedMap = new Map<string, any>();
         normalized.forEach((d: any) => {
           const key = String(d.name).trim().toLowerCase();
@@ -233,7 +254,6 @@ export default function ITDashboard() {
         notifications.filter((n: PendingITNotification) => !n.processed),
       );
     }
-
   }, []);
 
   const handleRemoveIT = (id: string) => {
@@ -327,7 +347,9 @@ export default function ITDashboard() {
       if (found) targetEmpId = found.id;
     }
     if (!targetEmpId && rec.employeeName) {
-      const foundByName = employees.find((e) => e.fullName === rec.employeeName);
+      const foundByName = employees.find(
+        (e) => e.fullName === rec.employeeName,
+      );
       if (foundByName) targetEmpId = foundByName.id;
     }
 
@@ -341,16 +363,22 @@ export default function ITDashboard() {
       const pcRaw = localStorage.getItem("pcLaptopAssets");
       const pcIds = pcRaw ? (JSON.parse(pcRaw) as any[]).map((x) => x.id) : [];
       const itRaw = localStorage.getItem("itAccounts");
-      const used = itRaw ? (JSON.parse(itRaw) as any[]).map((x: any) => x.systemId) : [];
-      const combined = pcIds.filter((id: string) => !used.includes(id) || id === rec.systemId);
+      const used = itRaw
+        ? (JSON.parse(itRaw) as any[]).map((x: any) => x.systemId)
+        : [];
+      const combined = pcIds.filter(
+        (id: string) => !used.includes(id) || id === rec.systemId,
+      );
       // If the current systemId is not part of pcIds, still include it so the select can display it
-      if (rec.systemId && !combined.includes(rec.systemId)) combined.unshift(rec.systemId);
+      if (rec.systemId && !combined.includes(rec.systemId))
+        combined.unshift(rec.systemId);
       setAvailableSystemIds(combined);
     } catch (err) {
       // fallback: keep existing availableSystemIds
     }
 
-    const provider = (rec as any).vitelGlobal?.provider === "vonage" ? "vonage" : "vitel";
+    const provider =
+      (rec as any).vitelGlobal?.provider === "vonage" ? "vonage" : "vitel";
     setNewProvider(provider);
 
     // Populate provider IDs immediately from local storage so the provider ID select has values
@@ -359,9 +387,15 @@ export default function ITDashboard() {
       const assets = raw ? (JSON.parse(raw) as any[]) : [];
       const ids = assets
         .filter((a: any) =>
-          provider === "vonage" ? a.category === "vonage" : a.category === "vitel" || a.category === "vitel-global",
+          provider === "vonage"
+            ? a.category === "vonage"
+            : a.category === "vitel" || a.category === "vitel-global",
         )
-        .map((a: any) => (provider === "vonage" ? a.vonageExtCode || a.vonageNumber || a.id : a.id))
+        .map((a: any) =>
+          provider === "vonage"
+            ? a.vonageExtCode || a.vonageNumber || a.id
+            : a.id,
+        )
         .filter((x: any) => typeof x === "string" && x.trim());
       setNewProviderIds(ids);
     } catch (err) {
@@ -493,8 +527,12 @@ export default function ITDashboard() {
                                 onClick={() => {
                                   // Prefill Create IT form and open it
                                   setNewEmpId(notification.employeeId);
-                                  setNewDepartment(notification.department || "");
-                                  setNewTableNumber(notification.tableNumber || "");
+                                  setNewDepartment(
+                                    notification.department || "",
+                                  );
+                                  setNewTableNumber(
+                                    notification.tableNumber || "",
+                                  );
                                   setLockPrefill(true);
                                   setShowCreateITSheet(true);
                                 }}
@@ -505,10 +543,14 @@ export default function ITDashboard() {
                             </div>
                           </div>
                           <div className="text-xs text-slate-400">
-                            {notification.department} • Table {notification.tableNumber}
+                            {notification.department} • Table{" "}
+                            {notification.tableNumber}
                           </div>
                           <div className="text-xs text-slate-500">
-                            Created {new Date(notification.createdAt).toLocaleDateString()}
+                            Created{" "}
+                            {new Date(
+                              notification.createdAt,
+                            ).toLocaleDateString()}
                           </div>
                         </div>
                       </DropdownMenuItem>
@@ -517,9 +559,21 @@ export default function ITDashboard() {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-            <Sheet open={showCreateITSheet} onOpenChange={(o) => { setShowCreateITSheet(!!o); if (!o) setLockPrefill(false); }}>
+            <Sheet
+              open={showCreateITSheet}
+              onOpenChange={(o) => {
+                setShowCreateITSheet(!!o);
+                if (!o) setLockPrefill(false);
+              }}
+            >
               <SheetTrigger asChild>
-                <Button onClick={() => { setShowCreateITSheet(true); setLockPrefill(false); }} className="bg-blue-500 hover:bg-blue-600 text-white">
+                <Button
+                  onClick={() => {
+                    setShowCreateITSheet(true);
+                    setLockPrefill(false);
+                  }}
+                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                >
                   Add IT Data
                 </Button>
               </SheetTrigger>
@@ -539,7 +593,11 @@ export default function ITDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label className="text-slate-300">Employee Name</Label>
-                      <Select value={newEmpId} onValueChange={setNewEmpId} disabled={lockPrefill}>
+                      <Select
+                        value={newEmpId}
+                        onValueChange={setNewEmpId}
+                        disabled={lockPrefill}
+                      >
                         <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
                           <SelectValue placeholder="Select employee" />
                         </SelectTrigger>
@@ -593,12 +651,15 @@ export default function ITDashboard() {
                           <SelectValue placeholder="Select department" />
                         </SelectTrigger>
                         <SelectContent className="bg-slate-800 border-slate-700 text-white max-h-64">
-                    {departments.map((d, i) => (
-                      <SelectItem key={`${d.id || d.name}-${i}`} value={d.name}>
-                        {d.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
+                          {departments.map((d, i) => (
+                            <SelectItem
+                              key={`${d.id || d.name}-${i}`}
+                              value={d.name}
+                            >
+                              {d.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
@@ -670,7 +731,17 @@ export default function ITDashboard() {
                             <Select
                               value={row.provider}
                               onValueChange={(v) => {
-                                setNewEmails((r) => r.map((x, i) => (i === idx ? { ...x, provider: v as any, providerId: "" } : x)));
+                                setNewEmails((r) =>
+                                  r.map((x, i) =>
+                                    i === idx
+                                      ? {
+                                          ...x,
+                                          provider: v as any,
+                                          providerId: "",
+                                        }
+                                      : x,
+                                  ),
+                                );
                               }}
                             >
                               <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
@@ -693,7 +764,10 @@ export default function ITDashboard() {
                                   setNewEmails((r) =>
                                     r.map((x, i) =>
                                       i === idx
-                                        ? { ...x, providerCustom: e.target.value }
+                                        ? {
+                                            ...x,
+                                            providerCustom: e.target.value,
+                                          }
                                         : x,
                                     ),
                                   )
@@ -702,11 +776,16 @@ export default function ITDashboard() {
                               />
                             ) : null}
 
-                            { (row.provider === "VITEL_GLOBAL" || row.provider === "VONAGE") && (
+                            {(row.provider === "VITEL_GLOBAL" ||
+                              row.provider === "VONAGE") && (
                               <Select
                                 value={row.providerId || ""}
                                 onValueChange={(v) =>
-                                  setNewEmails((r) => r.map((x, i) => (i === idx ? { ...x, providerId: v } : x)))
+                                  setNewEmails((r) =>
+                                    r.map((x, i) =>
+                                      i === idx ? { ...x, providerId: v } : x,
+                                    ),
+                                  )
                                 }
                               >
                                 <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
@@ -714,16 +793,19 @@ export default function ITDashboard() {
                                 </SelectTrigger>
                                 <SelectContent className="bg-slate-800 border-slate-700 text-white max-h-64">
                                   {getProviderIds(row.provider).length === 0 ? (
-                                    <div className="px-3 py-2 text-slate-400">No IDs available</div>
+                                    <div className="px-3 py-2 text-slate-400">
+                                      No IDs available
+                                    </div>
                                   ) : (
                                     getProviderIds(row.provider).map((id) => (
-                                      <SelectItem key={id} value={id}>{id}</SelectItem>
+                                      <SelectItem key={id} value={id}>
+                                        {id}
+                                      </SelectItem>
                                     ))
                                   )}
                                 </SelectContent>
                               </Select>
                             )}
-
                           </div>
                           <Input
                             placeholder="email@example.com"
@@ -1133,17 +1215,23 @@ export default function ITDashboard() {
                                   className="border-slate-600 text-slate-300"
                                   onClick={() => setPreviewFull((v) => !v)}
                                 >
-                                  {previewFull ? "Hide Details" : "View Full Details"}
+                                  {previewFull
+                                    ? "Hide Details"
+                                    : "View Full Details"}
                                 </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   className="border-slate-600 text-slate-300"
                                   onClick={() =>
-                                    previewSecrets ? setPreviewSecrets(false) : requirePreviewPasscode()
+                                    previewSecrets
+                                      ? setPreviewSecrets(false)
+                                      : requirePreviewPasscode()
                                   }
                                 >
-                                  {previewSecrets ? "Hide Passwords" : "Show Passwords"}
+                                  {previewSecrets
+                                    ? "Hide Passwords"
+                                    : "Show Passwords"}
                                 </Button>
                               </div>
 
@@ -1268,16 +1356,34 @@ export default function ITDashboard() {
                                           className="p-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs items-start"
                                         >
                                           <div className="break-words min-w-0">
-                                            <div className="text-slate-500">Provider</div>
-                                            <div className="break-words whitespace-normal text-sm">{e.providerCustom || e.provider || "-"}</div>
+                                            <div className="text-slate-500">
+                                              Provider
+                                            </div>
+                                            <div className="break-words whitespace-normal text-sm">
+                                              {e.providerCustom ||
+                                                e.provider ||
+                                                "-"}
+                                            </div>
                                           </div>
                                           <div className="break-words min-w-0">
-                                            <div className="text-slate-500">Email</div>
-                                            <div className="break-words whitespace-normal text-sm">{e.email || "-"}</div>
+                                            <div className="text-slate-500">
+                                              Email
+                                            </div>
+                                            <div className="break-words whitespace-normal text-sm">
+                                              {e.email || "-"}
+                                            </div>
                                           </div>
                                           <div className="break-words min-w-0">
-                                            <div className="text-slate-500">Password</div>
-                                            <div className="break-words whitespace-normal text-sm">{e.password ? (previewSecrets ? e.password : "••••••") : "-"}</div>
+                                            <div className="text-slate-500">
+                                              Password
+                                            </div>
+                                            <div className="break-words whitespace-normal text-sm">
+                                              {e.password
+                                                ? previewSecrets
+                                                  ? e.password
+                                                  : "••••••"
+                                                : "-"}
+                                            </div>
                                           </div>
                                         </div>
                                       ),
@@ -1298,33 +1404,74 @@ export default function ITDashboard() {
                                   ? JSON.parse(assetsRaw)
                                   : [];
                                 let providerAsset: any = null;
-                                const findCategoryMatch = (a: any, keywords: string[]) => {
-                                  const cat = String(a?.category || "").toLowerCase();
+                                const findCategoryMatch = (
+                                  a: any,
+                                  keywords: string[],
+                                ) => {
+                                  const cat = String(
+                                    a?.category || "",
+                                  ).toLowerCase();
                                   return keywords.some((k) => cat.includes(k));
                                 };
-                                if ((r as any).vitelGlobal?.provider === "vonage") {
-                                  providerAsset = assets.find((a: any) =>
-                                    findCategoryMatch(a, ["vonage"]) &&
-                                    (a.id === r.vitelGlobal?.id || a.vonageExtCode === r.vitelGlobal?.id || a.vonageNumber === r.vitelGlobal?.id),
+                                if (
+                                  (r as any).vitelGlobal?.provider === "vonage"
+                                ) {
+                                  providerAsset = assets.find(
+                                    (a: any) =>
+                                      findCategoryMatch(a, ["vonage"]) &&
+                                      (a.id === r.vitelGlobal?.id ||
+                                        a.vonageExtCode === r.vitelGlobal?.id ||
+                                        a.vonageNumber === r.vitelGlobal?.id),
                                   );
                                 } else {
-                                  providerAsset = assets.find((a: any) =>
-                                    findCategoryMatch(a, ["vitel", "vitel-global", "vitel global"]) &&
-                                    a.id === r.vitelGlobal?.id,
+                                  providerAsset = assets.find(
+                                    (a: any) =>
+                                      findCategoryMatch(a, [
+                                        "vitel",
+                                        "vitel-global",
+                                        "vitel global",
+                                      ]) && a.id === r.vitelGlobal?.id,
                                   );
                                 }
                                 // compute fallbacks for provider details
-                                const displayCategory = providerAsset?.category || (r as any).vitelGlobal?.provider || "-";
-                                const displayId = r.vitelGlobal?.id || providerAsset?.id || "-";
-                                const displayVendor = providerAsset?.vendorName || providerAsset?.vendor || "-";
-                                const displayCompany = providerAsset?.companyName || providerAsset?.company || "-";
-                                const displayExt = providerAsset?.vonageExtCode || providerAsset?.vitelExtCode || providerAsset?.ext_code || (r as any).vitelGlobal?.extNumber || "-";
-                                const displayNumber = providerAsset?.vonageNumber || providerAsset?.vitelNumber || providerAsset?.number || (r as any).vitelGlobal?.id || "-";
-                                const displayPassword = providerAsset?.vonagePassword || providerAsset?.vitelPassword || providerAsset?.password || (r as any).vitelGlobal?.password || "-";
+                                const displayCategory =
+                                  providerAsset?.category ||
+                                  (r as any).vitelGlobal?.provider ||
+                                  "-";
+                                const displayId =
+                                  r.vitelGlobal?.id || providerAsset?.id || "-";
+                                const displayVendor =
+                                  providerAsset?.vendorName ||
+                                  providerAsset?.vendor ||
+                                  "-";
+                                const displayCompany =
+                                  providerAsset?.companyName ||
+                                  providerAsset?.company ||
+                                  "-";
+                                const displayExt =
+                                  providerAsset?.vonageExtCode ||
+                                  providerAsset?.vitelExtCode ||
+                                  providerAsset?.ext_code ||
+                                  (r as any).vitelGlobal?.extNumber ||
+                                  "-";
+                                const displayNumber =
+                                  providerAsset?.vonageNumber ||
+                                  providerAsset?.vitelNumber ||
+                                  providerAsset?.number ||
+                                  (r as any).vitelGlobal?.id ||
+                                  "-";
+                                const displayPassword =
+                                  providerAsset?.vonagePassword ||
+                                  providerAsset?.vitelPassword ||
+                                  providerAsset?.password ||
+                                  (r as any).vitelGlobal?.password ||
+                                  "-";
 
                                 return (
                                   <div className="rounded border border-slate-700 bg-slate-800/30 p-3">
-                                    <div className="font-medium text-white mb-2">Provider Details</div>
+                                    <div className="font-medium text-white mb-2">
+                                      Provider Details
+                                    </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
                                       <div>Category: {displayCategory}</div>
                                       <div>ID: {displayId}</div>
@@ -1332,7 +1479,14 @@ export default function ITDashboard() {
                                       <div>Company: {displayCompany}</div>
                                       <div>Ext: {displayExt}</div>
                                       <div>Number: {displayNumber}</div>
-                                      <div>Password: {displayPassword ? (previewSecrets ? displayPassword : "••••••") : "-"}</div>
+                                      <div>
+                                        Password:{" "}
+                                        {displayPassword
+                                          ? previewSecrets
+                                            ? displayPassword
+                                            : "••••••"
+                                          : "-"}
+                                      </div>
                                     </div>
                                   </div>
                                 );
@@ -1427,7 +1581,6 @@ export default function ITDashboard() {
                                 Created:{" "}
                                 {new Date(r.createdAt).toLocaleString()}
                               </div>
-
                             </div>
 
                             <SheetFooter>
@@ -1440,7 +1593,6 @@ export default function ITDashboard() {
                                 </Button>
                               </div>
                             </SheetFooter>
-
                           </SheetContent>
                         </Sheet>
                       </TableCell>

@@ -1118,94 +1118,20 @@ Generated on: ${new Date().toLocaleString()}
     const seeded = localStorage.getItem("demoEmployeesSeeded");
     if (seeded) return;
 
-    const savedEmployees: Employee[] = JSON.parse(
-      localStorage.getItem("hrEmployees") || "[]",
-    );
-    const savedDepartments: Department[] = JSON.parse(
-      localStorage.getItem("departments") || "[]",
-    );
-
-    if (savedEmployees.length >= 2) {
-      localStorage.setItem("demoEmployeesSeeded", "1");
-      return;
+    // Load richer demo employees (5 users with photo and doc placeholders)
+    try {
+      // lazy-load utility to avoid circular imports in some environments
+      const mod = await import("@/lib/createDemoData");
+      const added = mod.loadDemoEmployees();
+      if (added && added.length) {
+        // mark seeded so we don't re-add next time
+        localStorage.setItem("demoEmployeesSeeded", "1");
+      }
+    } catch (err) {
+      console.debug("Failed to seed demo employees", err);
     }
 
-    const img =
-      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==";
-
-    const emp1: Employee = {
-      id: `${Date.now()}-1`,
-      employeeId: `EMP${(Date.now() + 1).toString().slice(-4)}`,
-      fullName: "Rahul Sharma",
-      fatherName: "Mahesh Sharma",
-      motherName: "Suman Sharma",
-      birthDate: "1990-05-12",
-      bloodGroup: "B+",
-      mobileNumber: "+91 9876543210",
-      emergencyMobileNumber: "+91 9000000000",
-      alternativeMobileNumber: "+91 9999999999",
-      email: "rahul.sharma@example.com",
-      address: "A-12, Sector 21, Noida, UP",
-      permanentAddress: "Jaipur, Rajasthan",
-      photo: img,
-      joiningDate: "2023-04-01",
-      department: "Engineering",
-      position: "Software Engineer",
-      tableNumber: "5",
-      accountNumber: "012345678901",
-      ifscCode: "HDFC0001234",
-      bankPassbook: img,
-      aadhaarNumber: "1234 5678 9012",
-      panNumber: "ABCDE1234F",
-      uanNumber: "100200300400",
-      salary: "65000",
-      aadhaarCard: img,
-      panCard: img,
-      passport: img,
-      drivingLicense: img,
-      resume: img,
-      medicalCertificate: img,
-      educationCertificate: img,
-      experienceLetter: img,
-      status: "active",
-    };
-
-    const emp2: Employee = {
-      id: `${Date.now()}-2`,
-      employeeId: `EMP${(Date.now() + 2).toString().slice(-4)}`,
-      fullName: "Priya Verma",
-      fatherName: "Rakesh Verma",
-      motherName: "Anita Verma",
-      birthDate: "1994-11-23",
-      bloodGroup: "O+",
-      mobileNumber: "+91 9876543211",
-      emergencyMobileNumber: "+91 8888888888",
-      alternativeMobileNumber: "+91 7777777777",
-      email: "priya.verma@example.com",
-      address: "B-55, Andheri East, Mumbai",
-      permanentAddress: "Lucknow, UP",
-      photo: img,
-      joiningDate: "2022-09-15",
-      department: "HR",
-      position: "HR Executive",
-      tableNumber: "6",
-      accountNumber: "098765432109",
-      ifscCode: "SBI0004321",
-      bankPassbook: img,
-      aadhaarNumber: "9012 3456 7890",
-      panNumber: "PQRSX1234Z",
-      uanNumber: "400300200100",
-      salary: "42000",
-      aadhaarCard: img,
-      panCard: img,
-      passport: img,
-      drivingLicense: img,
-      resume: img,
-      medicalCertificate: img,
-      educationCertificate: img,
-      experienceLetter: img,
-      status: "active",
-    };
+    return;
 
     const newEmployees = [emp1, emp2];
     const updatedEmployees = [...savedEmployees, ...newEmployees];

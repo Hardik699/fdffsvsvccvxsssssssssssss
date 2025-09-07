@@ -1057,14 +1057,14 @@ export default function PCLaptopInfo() {
                           })()}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            onClick={() => openForm(a)}
-                            size="sm"
-                            className="bg-blue-500 hover:bg-blue-600 text-white flex items-center gap-1"
-                          >
-                            <Edit className="h-3 w-3" />
-                            Edit
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="ghost" onClick={() => openForm(a)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleRemove(a.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

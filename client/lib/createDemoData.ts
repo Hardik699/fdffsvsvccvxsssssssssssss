@@ -246,28 +246,28 @@ export function loadDemoData() {
   const existing = localStorage.getItem(STORAGE_KEY);
   const currentAssets: Asset[] = existing ? JSON.parse(existing) : [];
 
-  // Check if demo data already exists
-  const hasDemo = currentAssets.some(
-    (asset) => asset.id.includes("WX-M-001") || asset.id.includes("WX-M-002"),
-  );
+  const demoAssets = createDemoSystemAssets();
 
-  if (!hasDemo) {
-    const demoAssets = createDemoSystemAssets();
-    const allAssets = [...currentAssets, ...demoAssets];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(allAssets));
-    try {
-      fetch("/api/hr/assets/upsert-batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-role": "admin" },
-        body: JSON.stringify({ items: demoAssets }),
-      }).catch(() => {});
-    } catch {}
-    console.log("Demo system assets loaded:", demoAssets.length);
-    return demoAssets;
+  // Determine which demo assets are missing by id
+  const existingIds = new Set(currentAssets.map((a) => a.id));
+  const missing = demoAssets.filter((a) => !existingIds.has(a.id));
+
+  if (missing.length === 0) {
+    console.log("Demo data already exists");
+    return [];
   }
 
-  console.log("Demo data already exists");
-  return [];
+  const allAssets = [...currentAssets, ...missing];
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(allAssets));
+  try {
+    fetch("/api/hr/assets/upsert-batch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-role": "admin" },
+      body: JSON.stringify({ items: missing }),
+    }).catch(() => {});
+  } catch {}
+  console.log("Demo system assets loaded (missing added):", missing.length);
+  return missing;
 }
 
 // --- Demo employees ---

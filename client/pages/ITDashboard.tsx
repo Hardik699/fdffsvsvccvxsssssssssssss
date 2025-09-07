@@ -564,7 +564,7 @@ export default function ITDashboard() {
                               }}
                             >
                               <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
-                                <SelectValue> Provider </SelectValue>
+                                <SelectValue placeholder="Provider" />
                               </SelectTrigger>
                               <SelectContent className="bg-slate-800 border-slate-700 text-white">
                                 <SelectItem value="CUSTOM">CUSTOM</SelectItem>

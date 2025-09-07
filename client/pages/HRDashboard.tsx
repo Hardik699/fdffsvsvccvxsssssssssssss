@@ -2101,8 +2101,8 @@ Generated on: ${new Date().toLocaleString()}
                       </SelectTrigger>
                       <SelectContent className="bg-slate-800 border-slate-700 text-white">
                         <SelectItem value="all">All Departments</SelectItem>
-                        {departments.map((dept) => (
-                          <SelectItem key={dept.id} value={dept.name}>
+                        {departments.map((dept, i) => (
+                          <SelectItem key={`${dept.id || dept.name}-${i}`} value={dept.name}>
                             {dept.name} (
                             {getEmployeesByDepartment(dept.name).length})
                           </SelectItem>

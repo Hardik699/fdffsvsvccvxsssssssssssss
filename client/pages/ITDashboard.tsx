@@ -241,6 +241,11 @@ export default function ITDashboard() {
     const next = records.filter((rec) => rec.id !== id);
     setRecords(next);
     localStorage.setItem("itAccounts", JSON.stringify(next));
+    // Attempt to delete from server so periodic pulls don't restore it
+    fetch(`/api/hr/it-accounts/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", "x-role": "admin" },
+    }).catch(() => {});
     alert("IT account removed");
   };
 

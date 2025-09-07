@@ -236,6 +236,14 @@ export default function ITDashboard() {
 
   }, []);
 
+  const handleRemoveIT = (id: string) => {
+    if (!confirm("Remove this IT account?")) return;
+    const next = records.filter((rec) => rec.id !== id);
+    setRecords(next);
+    localStorage.setItem("itAccounts", JSON.stringify(next));
+    alert("IT account removed");
+  };
+
   const handleProcessEmployee = (_notification: PendingITNotification) => {
     alert("IT has been notified. Credential form is disabled in this build.");
   };

@@ -155,13 +155,6 @@ export default function SystemInfo() {
                 >
                   Go
                 </Button>
-                <Button
-                  onClick={() => navigate(`/system-info/${slug}?open=1`)}
-                  variant="outline"
-                  className="border-slate-600 text-slate-300 hover:bg-slate-700 transition-transform duration-300"
-                >
-                  Add
-                </Button>
               </CardContent>
             </Card>
           ))}

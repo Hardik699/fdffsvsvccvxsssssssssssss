@@ -677,8 +677,6 @@ export default function ITDashboard() {
                                 <SelectItem value="LP">LP</SelectItem>
                                 <SelectItem value="MS">MS TEMS</SelectItem>
                                 <SelectItem value="ORWIN">ORWIN</SelectItem>
-                                <SelectItem value="VITEL_GLOBAL">VITEL GLOBAL</SelectItem>
-                                <SelectItem value="VONAGE">VONAGE</SelectItem>
                               </SelectContent>
                             </Select>
 

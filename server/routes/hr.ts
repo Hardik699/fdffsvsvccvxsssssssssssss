@@ -407,6 +407,17 @@ const createItAccount: RequestHandler = async (req, res, next) => {
   }
 };
 
+const deleteItAccount: RequestHandler = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: 'Missing id' });
+    await pool.query(`DELETE FROM it_accounts WHERE id = $1`, [id]);
+    res.json({ id });
+  } catch (err) {
+    next(err);
+  }
+};
+
 const listAssignments: RequestHandler = async (_req, res) => {
   const { rows } = await pool.query(
     "SELECT * FROM asset_assignments ORDER BY assigned_at DESC",

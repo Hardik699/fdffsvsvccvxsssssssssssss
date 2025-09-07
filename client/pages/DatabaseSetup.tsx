@@ -18,7 +18,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function DatabaseSetup() {
-  const [dbUrl, setDbUrl] = useState("");
+  const [dbUrl, setDbUrl] = useState("postgresql://neondb_owner:npg_Qhjkl24tnxRE@ep-patient-dew-aeh2x2hr-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require");
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{
     success: boolean;
@@ -39,6 +39,10 @@ export default function DatabaseSetup() {
 
   useEffect(() => {
     checkDbHealth();
+    // Auto-test the connection on load
+    if (dbUrl) {
+      testConnection();
+    }
     const interval = setInterval(checkDbHealth, 10000);
     return () => clearInterval(interval);
   }, []);

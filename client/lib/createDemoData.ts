@@ -215,3 +215,83 @@ export function loadDemoData() {
   console.log("Demo data already exists");
   return [];
 }
+
+// --- Demo employees ---
+export type DemoEmployee = {
+  id: string;
+  employeeId: string;
+  fullName: string;
+  department: string;
+  position?: string;
+  tableNumber?: string;
+  email?: string;
+  photo?: string;
+  bankPassbook?: string;
+  aadhaarCard?: string;
+  panCard?: string;
+  resume?: string;
+};
+
+export function createDemoEmployees(): DemoEmployee[] {
+  const img =
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAAAAACPAi4CAAAACXBIWXMAAAsTAAALEwEAmpwYAAABKklEQVR4nO3WsQnEIAwF0L7n/6a7lq9gQw5y2U8zJk6h0kQ3mQGx1g9ZgQAAAAAAAAAwGv6f3k1S0l3m1eF7c3QZ3g5rj7m7n+u3wQ8n2FvY8l8n2FvY8l8n2FvY8l8n2FvY8l8n2FvY8l8n2FvY8l8n2FvY8l8n2FvY8l8n2FvY8l8n2FvY8l8n2FfY4r9/sdV2y8AAGAwYwz3Xl8oQAAAABJRU5ErkJggg==";
+  const now = Date.now();
+  const names = [
+    "Rahul Sharma",
+    "Priya Verma",
+    "Amit Kumar",
+    "Sneha Patel",
+    "Vikas Gupta",
+  ];
+
+  const depts = ["Engineering", "HR", "Sales", "Support", "Finance"];
+
+  const employees: DemoEmployee[] = names.map((name, i) => ({
+    id: `${now}-${i}`,
+    employeeId: `EMP${(now + i).toString().slice(-4)}`,
+    fullName: name,
+    department: depts[i % depts.length],
+    position: i % 2 === 0 ? "Software Engineer" : "Executive",
+    tableNumber: `${i + 1}`,
+    email: `${name.toLowerCase().replace(/\s+/g, ".")}@example.com`,
+    photo: img,
+    bankPassbook: img,
+    aadhaarCard: img,
+    panCard: img,
+    resume: img,
+  }));
+
+  return employees;
+}
+
+export function loadDemoEmployees() {
+  const existing = localStorage.getItem("hrEmployees");
+  const current = existing ? JSON.parse(existing) : [];
+  if (Array.isArray(current) && current.length >= 5) {
+    console.log("Demo employees already present");
+    return [];
+  }
+  const demo = createDemoEmployees();
+  const merged = [...demo, ...current];
+  localStorage.setItem("hrEmployees", JSON.stringify(merged));
+  // also ensure departments exist
+  const deptsRaw = localStorage.getItem("departments");
+  const depts = deptsRaw ? JSON.parse(deptsRaw) : [];
+  const needed = Array.from(new Set(demo.map((d) => d.department))).map((name) => ({ id: `D-${name}`, name }));
+  const mergedDepts = [...needed, ...depts];
+  localStorage.setItem("departments", JSON.stringify(mergedDepts));
+
+  // attempt to sync to server
+  try {
+    for (const e of demo) {
+      fetch("/api/hr/employees", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-role": "admin" },
+        body: JSON.stringify(e),
+      }).catch(() => {});
+    }
+  } catch {}
+
+  console.log("Demo employees loaded:", demo.length);
+  return demo;
+}

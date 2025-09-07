@@ -183,6 +183,60 @@ export function createDemoSystemAssets(): Asset[] {
       vonageExtCode: "101",
       vonagePassword: "demo123!",
     },
+
+    // Storage (SSD/HDD) demo assets
+    {
+      id: "WX-ST-001",
+      category: "storage",
+      serialNumber: "SSD-SAM-001",
+      vendorName: "Samsung",
+      companyName: "Tech Solutions Inc",
+      purchaseDate: "2024-01-12",
+      warrantyEndDate: warranty,
+      createdAt: today,
+      storageType: "SSD",
+      storageCapacity: "512GB",
+    },
+    {
+      id: "WX-ST-002",
+      category: "storage",
+      serialNumber: "HDD-WD-002",
+      vendorName: "Western Digital",
+      companyName: "Business Corp",
+      purchaseDate: "2024-02-03",
+      warrantyEndDate: warranty,
+      createdAt: today,
+      storageType: "HDD",
+      storageCapacity: "1TB",
+    },
+
+    // Vitel Global demo assets
+    {
+      id: "WX-VG-001",
+      category: "vitel-global",
+      serialNumber: "VIT-TRK-1001",
+      vendorName: "Vitel Global",
+      companyName: "Tech Solutions Inc",
+      purchaseDate: "2024-03-01",
+      warrantyEndDate: warranty,
+      createdAt: today,
+      vitelNumber: "+44-20-1234-5678",
+      vitelExtCode: "200",
+      vitelPassword: "vitelDemo1",
+    },
+    {
+      id: "WX-VG-002",
+      category: "vitel-global",
+      serialNumber: "VIT-TRK-1002",
+      vendorName: "Vitel Global",
+      companyName: "Business Corp",
+      purchaseDate: "2024-03-05",
+      warrantyEndDate: warranty,
+      createdAt: today,
+      vitelNumber: "+44-20-8765-4321",
+      vitelExtCode: "201",
+      vitelPassword: "vitelDemo2",
+    },
   ];
 
   return demoAssets;

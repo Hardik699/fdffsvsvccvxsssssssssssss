@@ -27,7 +27,6 @@ import {
   Database,
   RefreshCw,
   ServerCog,
-  CloudUpload,
 } from "lucide-react";
 
 export default function AppNav() {

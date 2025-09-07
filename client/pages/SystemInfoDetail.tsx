@@ -775,12 +775,14 @@ export default function SystemInfoDetail() {
                         <TableHead>Password</TableHead>
                         <TableHead>Purchase Date</TableHead>
                         <TableHead>Warranty End Date</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     ) : (
                       <TableRow>
                         <TableHead>ID</TableHead>
                         <TableHead>Company</TableHead>
                         <TableHead>Serial Number</TableHead>
+                        <TableHead>Actions</TableHead>
                         {categoryKey === "ram" && (
                           <TableHead>RAM Size</TableHead>
                         )}

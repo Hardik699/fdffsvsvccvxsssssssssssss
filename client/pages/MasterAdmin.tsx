@@ -267,7 +267,16 @@ export default function MasterAdmin() {
       let departments = JSON.parse(rawDepts);
       try {
         const parsed = Array.isArray(departments) ? departments : [];
-        const deduped = Array.from(new Map(parsed.map((d: any) => [d.id || d.name, d])).values());
+        const normalized = (parsed || []).map((d: any, idx: number) => ({
+          id:
+            d?.id || `${String(d?.name || "dept").trim().toLowerCase().replace(/\s+/g, "-")}-${idx}`,
+          name: String(d?.name || "").trim(),
+          manager: d?.manager || "",
+          employeeCount: typeof d?.employeeCount === "number" ? d.employeeCount : 0,
+        }));
+        const deduped = Array.from(
+          new Map(normalized.map((d: any) => [String(d.name).trim().toLowerCase(), d])).values(),
+        );
         departments = deduped;
       } catch (err) {
         // keep departments as parsed

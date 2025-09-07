@@ -263,9 +263,15 @@ export default function MasterAdmin() {
         localStorage.getItem("userCredentials") || "{}",
       );
       const employees = JSON.parse(localStorage.getItem("hrEmployees") || "[]");
-      const departments = JSON.parse(
-        localStorage.getItem("departments") || "[]",
-      );
+      const rawDepts = localStorage.getItem("departments") || "[]";
+      let departments = JSON.parse(rawDepts);
+      try {
+        const parsed = Array.isArray(departments) ? departments : [];
+        const deduped = Array.from(new Map(parsed.map((d: any) => [d.id || d.name, d])).values());
+        departments = deduped;
+      } catch (err) {
+        // keep departments as parsed
+      }
       const leaveRequests = JSON.parse(
         localStorage.getItem("leaveRequests") || "[]",
       );

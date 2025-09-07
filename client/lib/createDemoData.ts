@@ -325,7 +325,29 @@ export function loadDemoEmployees() {
   const mergedDepts = [...needed, ...depts];
   localStorage.setItem("departments", JSON.stringify(mergedDepts));
 
-  // attempt to sync to server
+  // add demo PC/Laptop assets if not present
+  try {
+    const pcRaw = localStorage.getItem("pcLaptopAssets");
+    const pcCurr = pcRaw ? JSON.parse(pcRaw) : [];
+    if (!Array.isArray(pcCurr) || pcCurr.length < 5) {
+      const pcs = Array.from({ length: 6 }, (_, i) => ({
+        id: `PC-${Date.now().toString().slice(-4)}-${i + 1}`,
+        model: `Demo PC ${i + 1}`,
+        serialNumber: `SN-${Math.random().toString(36).slice(2, 9)}`,
+        createdAt: new Date().toISOString(),
+      }));
+      localStorage.setItem("pcLaptopAssets", JSON.stringify(pcs));
+      try {
+        fetch("/api/hr/pc-laptops/upsert-batch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-role": "admin" },
+          body: JSON.stringify({ items: pcs }),
+        }).catch(() => {});
+      } catch {}
+    }
+  } catch {}
+
+  // attempt to sync to server for employees
   try {
     for (const e of demo) {
       fetch("/api/hr/employees", {

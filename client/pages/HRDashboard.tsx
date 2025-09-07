@@ -316,15 +316,23 @@ export default function HRDashboard() {
   }>({ open: false, employee: null, record: null });
 
   const formatTime = (d = new Date()) => {
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+    return d.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
   };
 
   const calculateHours = (checkIn: string, checkOut: string) => {
     try {
       const [inH, inM] = checkIn.split(":").map(Number);
       const [outH, outM] = checkOut.split(":").map(Number);
-      const inDate = new Date(`${selectedDate}T${String(inH).padStart(2, "0")}:${String(inM).padStart(2, "0")}:00`);
-      let outDate = new Date(`${selectedDate}T${String(outH).padStart(2, "0")}:${String(outM).padStart(2, "0")}:00`);
+      const inDate = new Date(
+        `${selectedDate}T${String(inH).padStart(2, "0")}:${String(inM).padStart(2, "0")}:00`,
+      );
+      let outDate = new Date(
+        `${selectedDate}T${String(outH).padStart(2, "0")}:${String(outM).padStart(2, "0")}:00`,
+      );
       // handle overnight: if out is earlier than in, add one day to out
       if (outDate <= inDate) {
         outDate = new Date(outDate.getTime() + 24 * 60 * 60 * 1000);
@@ -361,25 +369,42 @@ export default function HRDashboard() {
     upsertAttendanceRecord(rec);
     // update modal if open
     if (attendanceModal.open && attendanceModal.employee?.id === employeeId) {
-      setAttendanceModal((prev) => ({ ...prev, record: { ...(prev.record || {}), ...rec } }));
+      setAttendanceModal((prev) => ({
+        ...prev,
+        record: { ...(prev.record || {}), ...rec },
+      }));
     }
   };
 
   const handleCheckOut = (employeeId: string) => {
     const now = formatTime(new Date());
-    const existing = attendanceRecords.find((r) => r.employeeId === employeeId && r.date === selectedDate);
+    const existing = attendanceRecords.find(
+      (r) => r.employeeId === employeeId && r.date === selectedDate,
+    );
     const rec: AttendanceRecord = existing
       ? { ...existing, checkOut: now }
-      : ({ employeeId, date: selectedDate, present: true, checkOut: now } as AttendanceRecord);
+      : ({
+          employeeId,
+          date: selectedDate,
+          present: true,
+          checkOut: now,
+        } as AttendanceRecord);
     upsertAttendanceRecord(rec);
     if (attendanceModal.open && attendanceModal.employee?.id === employeeId) {
-      setAttendanceModal((prev) => ({ ...prev, record: { ...(prev.record || {}), ...rec } }));
+      setAttendanceModal((prev) => ({
+        ...prev,
+        record: { ...(prev.record || {}), ...rec },
+      }));
     }
   };
 
   const openAttendanceFor = (employeeId: string) => {
     const emp = employees.find((e) => e.id === employeeId) || null;
-    const rec = attendanceRecords.find((r) => r.employeeId === employeeId && r.date === selectedDate) || ({ employeeId, date: selectedDate, present: true } as AttendanceRecord);
+    const rec =
+      attendanceRecords.find(
+        (r) => r.employeeId === employeeId && r.date === selectedDate,
+      ) ||
+      ({ employeeId, date: selectedDate, present: true } as AttendanceRecord);
     setAttendanceModal({ open: true, employee: emp, record: rec });
   };
 
@@ -390,10 +415,21 @@ export default function HRDashboard() {
         alert("No attendance records for selected date");
         return;
       }
-      const headers = ["employeeId", "date", "checkIn", "checkOut", "present", "notes"];
-      const csv = [headers.join(",")].concat(
-        rows.map((r) => headers.map((h) => JSON.stringify((r as any)[h] ?? "")).join(",")),
-      ).join("\n");
+      const headers = [
+        "employeeId",
+        "date",
+        "checkIn",
+        "checkOut",
+        "present",
+        "notes",
+      ];
+      const csv = [headers.join(",")]
+        .concat(
+          rows.map((r) =>
+            headers.map((h) => JSON.stringify((r as any)[h] ?? "")).join(","),
+          ),
+        )
+        .join("\n");
       const blob = new Blob([csv], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -2830,12 +2866,19 @@ Generated on: ${new Date().toLocaleString()}
                   {/* Left: Active employee list */}
                   <div className="md:col-span-1">
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-medium text-white">Active Employees</h4>
-                      <div className="text-xs text-slate-400">Shift: 6:00 PM - 3:30 AM</div>
+                      <h4 className="text-sm font-medium text-white">
+                        Active Employees
+                      </h4>
+                      <div className="text-xs text-slate-400">
+                        Shift: 6:00 PM - 3:30 AM
+                      </div>
                     </div>
                     <div className="max-h-96 overflow-auto rounded border border-slate-700 bg-slate-800/30 p-2 space-y-2">
-                      {(employees.filter((e) => e.status === "active") || []).length === 0 ? (
-                        <div className="text-slate-400 text-sm p-4 text-center">No active employees</div>
+                      {(employees.filter((e) => e.status === "active") || [])
+                        .length === 0 ? (
+                        <div className="text-slate-400 text-sm p-4 text-center">
+                          No active employees
+                        </div>
                       ) : (
                         employees
                           .filter((e) => e.status === "active")
@@ -2844,22 +2887,50 @@ Generated on: ${new Date().toLocaleString()}
                             const checkedIn = !!rec?.checkIn;
                             const checkedOut = !!rec?.checkOut;
                             return (
-                              <div key={emp.id} className="flex items-center justify-between p-2 rounded hover:bg-slate-800/40">
+                              <div
+                                key={emp.id}
+                                className="flex items-center justify-between p-2 rounded hover:bg-slate-800/40"
+                              >
                                 <div>
-                                  <div className="text-sm text-white font-medium">{emp.fullName}</div>
-                                  <div className="text-xs text-slate-400">{emp.position || emp.department || "-"}</div>
+                                  <div className="text-sm text-white font-medium">
+                                    {emp.fullName}
+                                  </div>
+                                  <div className="text-xs text-slate-400">
+                                    {emp.position || emp.department || "-"}
+                                  </div>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   {!checkedIn && (
-                                    <Button size="sm" className="text-xs" onClick={() => handleCheckIn(emp.id)}>Check In</Button>
+                                    <Button
+                                      size="sm"
+                                      className="text-xs"
+                                      onClick={() => handleCheckIn(emp.id)}
+                                    >
+                                      Check In
+                                    </Button>
                                   )}
                                   {checkedIn && !checkedOut && (
-                                    <Button size="sm" className="text-xs" onClick={() => handleCheckOut(emp.id)}>Check Out</Button>
+                                    <Button
+                                      size="sm"
+                                      className="text-xs"
+                                      onClick={() => handleCheckOut(emp.id)}
+                                    >
+                                      Check Out
+                                    </Button>
                                   )}
                                   {checkedIn && checkedOut && (
-                                    <Badge className="text-xs bg-green-600">Done</Badge>
+                                    <Badge className="text-xs bg-green-600">
+                                      Done
+                                    </Badge>
                                   )}
-                                  <Button variant="ghost" size="sm" className="text-xs" onClick={() => openAttendanceFor(emp.id)}>Open</Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-xs"
+                                    onClick={() => openAttendanceFor(emp.id)}
+                                  >
+                                    Open
+                                  </Button>
                                 </div>
                               </div>
                             );
@@ -2873,21 +2944,44 @@ Generated on: ${new Date().toLocaleString()}
                     <div className="rounded border border-slate-700 bg-slate-800/30 p-4">
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h4 className="text-lg font-medium text-white">Today's Attendance ({selectedDate})</h4>
-                          <div className="text-xs text-slate-400">Shift: 18:00 - 03:30 (overnight)</div>
+                          <h4 className="text-lg font-medium text-white">
+                            Today's Attendance ({selectedDate})
+                          </h4>
+                          <div className="text-xs text-slate-400">
+                            Shift: 18:00 - 03:30 (overnight)
+                          </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-slate-900/60 text-white" />
-                          <Button size="sm" onClick={() => { setSelectedDate(new Date().toISOString().split('T')[0]); }}>Today</Button>
+                          <Input
+                            type="date"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="bg-slate-900/60 text-white"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setSelectedDate(
+                                new Date().toISOString().split("T")[0],
+                              );
+                            }}
+                          >
+                            Today
+                          </Button>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 gap-3">
                         {/* Selected employee panel or summary list */}
                         <div className="flex items-center justify-between">
-                          <div className="text-sm text-slate-400">Click an employee on the left to view full attendance controls and history.</div>
+                          <div className="text-sm text-slate-400">
+                            Click an employee on the left to view full
+                            attendance controls and history.
+                          </div>
                           <div>
-                            <Button onClick={exportAttendanceCsv} size="sm">Export CSV</Button>
+                            <Button onClick={exportAttendanceCsv} size="sm">
+                              Export CSV
+                            </Button>
                           </div>
                         </div>
 
@@ -2904,21 +2998,64 @@ Generated on: ${new Date().toLocaleString()}
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {(employees.filter((e) => e.status === 'active') || []).map((emp) => {
+                              {(
+                                employees.filter(
+                                  (e) => e.status === "active",
+                                ) || []
+                              ).map((emp) => {
                                 const rec = attendanceDayMap[emp.id];
-                                const hours = rec && rec.checkIn && rec.checkOut ? calculateHours(rec.checkIn, rec.checkOut) : '';
+                                const hours =
+                                  rec && rec.checkIn && rec.checkOut
+                                    ? calculateHours(rec.checkIn, rec.checkOut)
+                                    : "";
                                 return (
                                   <TableRow key={emp.id}>
-                                    <TableCell className="text-sm">{emp.fullName}</TableCell>
-                                    <TableCell className="text-sm">{rec?.checkIn || '-'}</TableCell>
-                                    <TableCell className="text-sm">{rec?.checkOut || '-'}</TableCell>
-                                    <TableCell className="text-sm">{hours}</TableCell>
-                                    <TableCell className="text-sm">{rec?.notes || '-'}</TableCell>
+                                    <TableCell className="text-sm">
+                                      {emp.fullName}
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      {rec?.checkIn || "-"}
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      {rec?.checkOut || "-"}
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      {hours}
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      {rec?.notes || "-"}
+                                    </TableCell>
                                     <TableCell className="text-sm">
                                       <div className="flex items-center space-x-2">
-                                        {!rec?.checkIn && <Button size="xs" onClick={() => handleCheckIn(emp.id)}>In</Button>}
-                                        {rec?.checkIn && !rec?.checkOut && <Button size="xs" onClick={() => handleCheckOut(emp.id)}>Out</Button>}
-                                        <Button size="xs" variant="ghost" onClick={() => openAttendanceFor(emp.id)}>Details</Button>
+                                        {!rec?.checkIn && (
+                                          <Button
+                                            size="xs"
+                                            onClick={() =>
+                                              handleCheckIn(emp.id)
+                                            }
+                                          >
+                                            In
+                                          </Button>
+                                        )}
+                                        {rec?.checkIn && !rec?.checkOut && (
+                                          <Button
+                                            size="xs"
+                                            onClick={() =>
+                                              handleCheckOut(emp.id)
+                                            }
+                                          >
+                                            Out
+                                          </Button>
+                                        )}
+                                        <Button
+                                          size="xs"
+                                          variant="ghost"
+                                          onClick={() =>
+                                            openAttendanceFor(emp.id)
+                                          }
+                                        >
+                                          Details
+                                        </Button>
                                       </div>
                                     </TableCell>
                                   </TableRow>
@@ -2936,35 +3073,95 @@ Generated on: ${new Date().toLocaleString()}
                         <div className="w-full max-w-2xl p-4">
                           <Card className="bg-slate-900 border-slate-700">
                             <CardHeader>
-                              <CardTitle className="text-white">Attendance for {attendanceModal.employee?.fullName}</CardTitle>
-                              <CardDescription className="text-slate-400">Date: {attendanceModal.record?.date}</CardDescription>
+                              <CardTitle className="text-white">
+                                Attendance for{" "}
+                                {attendanceModal.employee?.fullName}
+                              </CardTitle>
+                              <CardDescription className="text-slate-400">
+                                Date: {attendanceModal.record?.date}
+                              </CardDescription>
                             </CardHeader>
                             <CardContent>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                  <div className="text-slate-400 text-sm">Check In</div>
-                                  <div className="text-white font-medium text-lg">{attendanceModal.record?.checkIn || '-'}</div>
+                                  <div className="text-slate-400 text-sm">
+                                    Check In
+                                  </div>
+                                  <div className="text-white font-medium text-lg">
+                                    {attendanceModal.record?.checkIn || "-"}
+                                  </div>
                                 </div>
                                 <div>
-                                  <div className="text-slate-400 text-sm">Check Out</div>
-                                  <div className="text-white font-medium text-lg">{attendanceModal.record?.checkOut || '-'}</div>
+                                  <div className="text-slate-400 text-sm">
+                                    Check Out
+                                  </div>
+                                  <div className="text-white font-medium text-lg">
+                                    {attendanceModal.record?.checkOut || "-"}
+                                  </div>
                                 </div>
                                 <div>
-                                  <div className="text-slate-400 text-sm">Hours</div>
-                                  <div className="text-white font-medium text-lg">{attendanceModal.record?.checkIn && attendanceModal.record?.checkOut ? calculateHours(attendanceModal.record.checkIn!, attendanceModal.record.checkOut!) : '-'}</div>
+                                  <div className="text-slate-400 text-sm">
+                                    Hours
+                                  </div>
+                                  <div className="text-white font-medium text-lg">
+                                    {attendanceModal.record?.checkIn &&
+                                    attendanceModal.record?.checkOut
+                                      ? calculateHours(
+                                          attendanceModal.record.checkIn!,
+                                          attendanceModal.record.checkOut!,
+                                        )
+                                      : "-"}
+                                  </div>
                                 </div>
                                 <div>
-                                  <div className="text-slate-400 text-sm">Present</div>
-                                  <div className="text-white font-medium">{attendanceModal.record?.present ? 'Yes' : 'No'}</div>
+                                  <div className="text-slate-400 text-sm">
+                                    Present
+                                  </div>
+                                  <div className="text-white font-medium">
+                                    {attendanceModal.record?.present
+                                      ? "Yes"
+                                      : "No"}
+                                  </div>
                                 </div>
                               </div>
 
                               <div className="mt-4 flex items-center space-x-2">
-                                {!attendanceModal.record?.checkIn && <Button onClick={() => handleCheckIn(attendanceModal.employee!.id)}>Check In</Button>}
-                                {attendanceModal.record?.checkIn && !attendanceModal.record?.checkOut && <Button onClick={() => handleCheckOut(attendanceModal.employee!.id)}>Check Out</Button>}
-                                <Button variant="outline" onClick={() => setAttendanceModal({ open: false, employee: null, record: null })}>Close</Button>
+                                {!attendanceModal.record?.checkIn && (
+                                  <Button
+                                    onClick={() =>
+                                      handleCheckIn(
+                                        attendanceModal.employee!.id,
+                                      )
+                                    }
+                                  >
+                                    Check In
+                                  </Button>
+                                )}
+                                {attendanceModal.record?.checkIn &&
+                                  !attendanceModal.record?.checkOut && (
+                                    <Button
+                                      onClick={() =>
+                                        handleCheckOut(
+                                          attendanceModal.employee!.id,
+                                        )
+                                      }
+                                    >
+                                      Check Out
+                                    </Button>
+                                  )}
+                                <Button
+                                  variant="outline"
+                                  onClick={() =>
+                                    setAttendanceModal({
+                                      open: false,
+                                      employee: null,
+                                      record: null,
+                                    })
+                                  }
+                                >
+                                  Close
+                                </Button>
                               </div>
-
                             </CardContent>
                           </Card>
                         </div>

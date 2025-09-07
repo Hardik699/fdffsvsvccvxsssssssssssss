@@ -1122,31 +1122,27 @@ export default function ITDashboard() {
                                 IT Account Preview
                               </SheetTitle>
                             </SheetHeader>
-                            <div className="mt-3 flex items-center justify-end gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-slate-600 text-slate-300"
-                                onClick={() => setPreviewFull((v) => !v)}
-                              >
-                                {previewFull
-                                  ? "Hide Details"
-                                  : "View Full Details"}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-slate-600 text-slate-300"
-                                onClick={() =>
-                                  previewSecrets
-                                    ? setPreviewSecrets(false)
-                                    : requirePreviewPasscode()
-                                }
-                              >
-                                {previewSecrets
-                                  ? "Hide Passwords"
-                                  : "Show Passwords"}
-                              </Button>
+                            <div className="mt-3 flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-slate-600 text-slate-300"
+                                  onClick={() => setPreviewFull((v) => !v)}
+                                >
+                                  {previewFull ? "Hide Details" : "View Full Details"}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-slate-600 text-slate-300"
+                                  onClick={() =>
+                                    previewSecrets ? setPreviewSecrets(false) : requirePreviewPasscode()
+                                  }
+                                >
+                                  {previewSecrets ? "Hide Passwords" : "Show Passwords"}
+                                </Button>
+                              </div>
 
                               {/* Remove IT account button (closes sheet via SheetClose) */}
                               <SheetClose asChild>
@@ -1173,7 +1169,7 @@ export default function ITDashboard() {
                                   .join("");
                                 return (
                                   <div className="flex items-center gap-4">
-                                    <Avatar className="h-14 w-14">
+                                    <Avatar className="h-16 w-16">
                                       <AvatarImage
                                         src={
                                           (emp && emp.photo) ||
@@ -1465,7 +1461,10 @@ export default function ITDashboard() {
                                 {new Date(r.createdAt).toLocaleString()}
                               </div>
 
-                              <div className="flex justify-end gap-2 pt-2">
+                            </div>
+
+                            <SheetFooter>
+                              <div className="w-full flex justify-end">
                                 <Button
                                   className="bg-blue-500 hover:bg-blue-600 text-white"
                                   onClick={() => handleEditIT(r)}
@@ -1473,7 +1472,8 @@ export default function ITDashboard() {
                                   <Pencil className="h-4 w-4 mr-1" /> Edit IT
                                 </Button>
                               </div>
-                            </div>
+                            </SheetFooter>
+
                           </SheetContent>
                         </Sheet>
                       </TableCell>

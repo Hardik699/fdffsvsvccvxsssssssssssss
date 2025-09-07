@@ -200,7 +200,7 @@ export default function AppNav() {
   const deployNetlify = async () => {
     try {
       alert(
-        "To deploy: use the platform’s Netlify MCP. Click ‘Connect Netlify MCP’ in the top bar and deploy.",
+        "To deploy: use the platform's Netlify MCP. Click 'Connect Netlify MCP' in the top bar and deploy.",
       );
     } catch {}
   };
@@ -348,6 +348,16 @@ export default function AppNav() {
                     >
                       <CloudUpload className="h-4 w-4 mr-2" />
                       Deploy
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate("/database-setup")}
+                      className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-300"
+                      title="Database Setup"
+                    >
+                      <Database className="h-4 w-4 mr-2" />
+                      Database
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

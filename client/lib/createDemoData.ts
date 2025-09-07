@@ -376,7 +376,10 @@ export function loadDemoEmployees() {
   const deptsRaw = localStorage.getItem("departments");
   const depts = deptsRaw ? JSON.parse(deptsRaw) : [];
   const needed = Array.from(new Set(demo.map((d) => d.department))).map((name) => ({ id: `D-${name}`, name }));
-  const mergedDepts = [...needed, ...depts];
+  // Merge and dedupe departments by name
+  const mergedMap = new Map<string, any>();
+  [...needed, ...depts].forEach((d: any) => mergedMap.set(d.name, d));
+  const mergedDepts = Array.from(mergedMap.values());
   localStorage.setItem("departments", JSON.stringify(mergedDepts));
 
   // add demo PC/Laptop assets if not present

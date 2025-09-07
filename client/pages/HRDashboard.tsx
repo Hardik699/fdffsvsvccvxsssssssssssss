@@ -383,7 +383,7 @@ export default function HRDashboard() {
     setAttendanceModal({ open: true, employee: emp, record: rec });
   };
 
-  const exportAttendanceCsv = () => {
+  function exportAttendanceCsv() {
     try {
       const rows = attendanceRecords.filter((r) => r.date === selectedDate);
       if (!rows.length) {
@@ -405,7 +405,7 @@ export default function HRDashboard() {
       console.error(e);
       alert("Failed to export CSV");
     }
-  };
+  }
 
   // Document preview modal state
   const [documentPreviewModal, setDocumentPreviewModal] = useState<{

@@ -2727,20 +2727,151 @@ Generated on: ${new Date().toLocaleString()}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12">
-                  <Clock className="h-16 w-16 text-slate-600 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-white mb-2">
-                    Attendance System
-                  </h3>
-                  <p className="text-slate-400 mb-4">
-                    Track employee check-ins, check-outs, and working hours
-                  </p>
-                  <Badge
-                    variant="secondary"
-                    className="bg-blue-500/20 text-blue-400"
-                  >
-                    Coming Soon
-                  </Badge>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Left: Active employee list */}
+                  <div className="md:col-span-1">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-medium text-white">Active Employees</h4>
+                      <div className="text-xs text-slate-400">Shift: 6:00 PM - 3:30 AM</div>
+                    </div>
+                    <div className="max-h-96 overflow-auto rounded border border-slate-700 bg-slate-800/30 p-2 space-y-2">
+                      {(employees.filter((e) => e.status === "active") || []).length === 0 ? (
+                        <div className="text-slate-400 text-sm p-4 text-center">No active employees</div>
+                      ) : (
+                        employees
+                          .filter((e) => e.status === "active")
+                          .map((emp) => {
+                            const rec = attendanceDayMap[emp.id];
+                            const checkedIn = !!rec?.checkIn;
+                            const checkedOut = !!rec?.checkOut;
+                            return (
+                              <div key={emp.id} className="flex items-center justify-between p-2 rounded hover:bg-slate-800/40">
+                                <div>
+                                  <div className="text-sm text-white font-medium">{emp.fullName}</div>
+                                  <div className="text-xs text-slate-400">{emp.position || emp.department || "-"}</div>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  {!checkedIn && (
+                                    <Button size="sm" className="text-xs" onClick={() => handleCheckIn(emp.id)}>Check In</Button>
+                                  )}
+                                  {checkedIn && !checkedOut && (
+                                    <Button size="sm" className="text-xs" onClick={() => handleCheckOut(emp.id)}>Check Out</Button>
+                                  )}
+                                  {checkedIn && checkedOut && (
+                                    <Badge className="text-xs bg-green-600">Done</Badge>
+                                  )}
+                                  <Button variant="ghost" size="sm" className="text-xs" onClick={() => openAttendanceFor(emp.id)}>Open</Button>
+                                </div>
+                              </div>
+                            );
+                          })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right: Details and today's attendance */}
+                  <div className="md:col-span-2">
+                    <div className="rounded border border-slate-700 bg-slate-800/30 p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h4 className="text-lg font-medium text-white">Today's Attendance ({selectedDate})</h4>
+                          <div className="text-xs text-slate-400">Shift: 18:00 - 03:30 (overnight)</div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="bg-slate-900/60 text-white" />
+                          <Button size="sm" onClick={() => { setSelectedDate(new Date().toISOString().split('T')[0]); }}>Today</Button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3">
+                        {/* Selected employee panel or summary list */}
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-slate-400">Click an employee on the left to view full attendance controls and history.</div>
+                          <div>
+                            <Button onClick={exportAttendanceCsv} size="sm">Export CSV</Button>
+                          </div>
+                        </div>
+
+                        <div className="overflow-auto max-h-72 rounded border border-slate-700 bg-slate-900/20 p-2">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Employee</TableHead>
+                                <TableHead>Check In</TableHead>
+                                <TableHead>Check Out</TableHead>
+                                <TableHead>Hours</TableHead>
+                                <TableHead>Notes</TableHead>
+                                <TableHead>Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {(employees.filter((e) => e.status === 'active') || []).map((emp) => {
+                                const rec = attendanceDayMap[emp.id];
+                                const hours = rec && rec.checkIn && rec.checkOut ? calculateHours(rec.checkIn, rec.checkOut) : '';
+                                return (
+                                  <TableRow key={emp.id}>
+                                    <TableCell className="text-sm">{emp.fullName}</TableCell>
+                                    <TableCell className="text-sm">{rec?.checkIn || '-'}</TableCell>
+                                    <TableCell className="text-sm">{rec?.checkOut || '-'}</TableCell>
+                                    <TableCell className="text-sm">{hours}</TableCell>
+                                    <TableCell className="text-sm">{rec?.notes || '-'}</TableCell>
+                                    <TableCell className="text-sm">
+                                      <div className="flex items-center space-x-2">
+                                        {!rec?.checkIn && <Button size="xs" onClick={() => handleCheckIn(emp.id)}>In</Button>}
+                                        {rec?.checkIn && !rec?.checkOut && <Button size="xs" onClick={() => handleCheckOut(emp.id)}>Out</Button>}
+                                        <Button size="xs" variant="ghost" onClick={() => openAttendanceFor(emp.id)}>Details</Button>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Attendance modal/drawer */}
+                    {attendanceModal.open && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                        <div className="w-full max-w-2xl p-4">
+                          <Card className="bg-slate-900 border-slate-700">
+                            <CardHeader>
+                              <CardTitle className="text-white">Attendance for {attendanceModal.employee?.fullName}</CardTitle>
+                              <CardDescription className="text-slate-400">Date: {attendanceModal.record?.date}</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <div className="text-slate-400 text-sm">Check In</div>
+                                  <div className="text-white font-medium text-lg">{attendanceModal.record?.checkIn || '-'}</div>
+                                </div>
+                                <div>
+                                  <div className="text-slate-400 text-sm">Check Out</div>
+                                  <div className="text-white font-medium text-lg">{attendanceModal.record?.checkOut || '-'}</div>
+                                </div>
+                                <div>
+                                  <div className="text-slate-400 text-sm">Hours</div>
+                                  <div className="text-white font-medium text-lg">{attendanceModal.record?.checkIn && attendanceModal.record?.checkOut ? calculateHours(attendanceModal.record.checkIn!, attendanceModal.record.checkOut!) : '-'}</div>
+                                </div>
+                                <div>
+                                  <div className="text-slate-400 text-sm">Present</div>
+                                  <div className="text-white font-medium">{attendanceModal.record?.present ? 'Yes' : 'No'}</div>
+                                </div>
+                              </div>
+
+                              <div className="mt-4 flex items-center space-x-2">
+                                {!attendanceModal.record?.checkIn && <Button onClick={() => handleCheckIn(attendanceModal.employee!.id)}>Check In</Button>}
+                                {attendanceModal.record?.checkIn && !attendanceModal.record?.checkOut && <Button onClick={() => handleCheckOut(attendanceModal.employee!.id)}>Check Out</Button>}
+                                <Button variant="outline" onClick={() => setAttendanceModal({ open: false, employee: null, record: null })}>Close</Button>
+                              </div>
+
+                            </CardContent>
+                          </Card>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>

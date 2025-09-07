@@ -1260,35 +1260,19 @@ export default function ITDashboard() {
                                       (e: any, i: number) => (
                                         <div
                                           key={i}
-                                          className="p-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs"
+                                          className="p-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs items-start"
                                         >
-                                          <div>
-                                            <div className="text-slate-500">
-                                              Provider
-                                            </div>
-                                            <div>
-                                              {e.providerCustom ||
-                                                e.provider ||
-                                                "-"}
-                                            </div>
+                                          <div className="break-words min-w-0">
+                                            <div className="text-slate-500">Provider</div>
+                                            <div className="break-words whitespace-normal text-sm">{e.providerCustom || e.provider || "-"}</div>
                                           </div>
-                                          <div>
-                                            <div className="text-slate-500">
-                                              Email
-                                            </div>
-                                            <div>{e.email || "-"}</div>
+                                          <div className="break-words min-w-0">
+                                            <div className="text-slate-500">Email</div>
+                                            <div className="break-words whitespace-normal text-sm">{e.email || "-"}</div>
                                           </div>
-                                          <div>
-                                            <div className="text-slate-500">
-                                              Password
-                                            </div>
-                                            <div>
-                                              {e.password
-                                                ? previewSecrets
-                                                  ? e.password
-                                                  : "••••••"
-                                                : "-"}
-                                            </div>
+                                          <div className="break-words min-w-0">
+                                            <div className="text-slate-500">Password</div>
+                                            <div className="break-words whitespace-normal text-sm">{e.password ? (previewSecrets ? e.password : "••••••") : "-"}</div>
                                           </div>
                                         </div>
                                       ),

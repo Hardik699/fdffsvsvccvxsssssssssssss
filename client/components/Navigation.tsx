@@ -262,7 +262,7 @@ export default function AppNav() {
   const deployNetlify = async () => {
     try {
       alert(
-        "To deploy: use the platform’s Netlify MCP. Click ‘Connect Netlify MCP’ in the top bar and deploy.",
+        "To deploy: use the platform's Netlify MCP. Click 'Connect Netlify MCP' in the top bar and deploy.",
       );
     } catch {}
   };
@@ -373,6 +373,59 @@ export default function AppNav() {
                       />
                       {syncing ? "Syncing" : "Sync"}
                     </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate("/deploy")}
+                      className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-300"
+                      title="Deploy & Database"
+                    >
+                      <CloudUpload className="h-4 w-4 mr-2" />
+                      Deploy
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate("/database-setup")}
+                      className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-300"
+                      title="Database Setup"
+                    >
+                      <Database className="h-4 w-4 mr-2" />
+                      Database
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-300"
+                          title="Admin tools"
+                        >
+                          <ServerCog className="h-4 w-4 mr-2" />
+                          Admin
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        className="bg-slate-800 border-slate-700 text-white"
+                        align="end"
+                      >
+                        <DropdownMenuItem
+                          className="focus:bg-slate-700 cursor-pointer"
+                          onClick={dbHealth}
+                        >
+                          <ServerCog className="h-4 w-4 mr-2" />
+                          DB Health Check
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="focus:bg-slate-700 cursor-pointer"
+                          onClick={dbBackfill}
+                        >
+                          <ServerCog className="h-4 w-4 mr-2" />
+                          DB Backfill Categories
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </>
                 )}
 

@@ -202,6 +202,44 @@ export default function PCLaptopInfo() {
     openForm();
   };
 
+  const handleRemove = (itemId: string) => {
+    if (!confirm("Remove this PC/Laptop record?")) return;
+    const remaining = items.filter((it) => it.id !== itemId);
+    setItems(remaining);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
+    // Update available assets after removal
+    try {
+      const sysRaw = localStorage.getItem(SYS_STORAGE_KEY);
+      const sysList: SysAsset[] = sysRaw ? JSON.parse(sysRaw) : [];
+      const usedMouseIds = getUsedIds(remaining, "mouseId");
+      const usedKeyboardIds = getUsedIds(remaining, "keyboardId");
+      const usedMotherboardIds = getUsedIds(remaining, "motherboardId");
+      const usedCameraIds = getUsedIds(remaining, "cameraId");
+      const usedHeadphoneIds = getUsedIds(remaining, "headphoneId");
+      const usedPowerSupplyIds = getUsedIds(remaining, "powerSupplyId");
+      const usedStorageIds = getUsedIds(remaining as any, "storageId" as any);
+      const usedRamIds = Array.from(
+        new Set([
+          ...getUsedIds(remaining, "ramId"),
+          ...getUsedIds(remaining as any, "ramId2" as any),
+        ]),
+      );
+
+      setMouseAssets(getAvailableAssets(sysList.filter((s) => s.category === "mouse"), usedMouseIds));
+      setKeyboardAssets(getAvailableAssets(sysList.filter((s) => s.category === "keyboard"), usedKeyboardIds));
+      setMotherboardAssets(getAvailableAssets(sysList.filter((s) => s.category === "motherboard"), usedMotherboardIds));
+      setCameraAssets(getAvailableAssets(sysList.filter((s) => s.category === "camera"), usedCameraIds));
+      setHeadphoneAssets(getAvailableAssets(sysList.filter((s) => s.category === "headphone"), usedHeadphoneIds));
+      setPowerSupplyAssets(getAvailableAssets(sysList.filter((s) => s.category === "power-supply"), usedPowerSupplyIds));
+      setStorageAssets(getAvailableAssets(sysList.filter((s) => s.category === "storage"), usedStorageIds));
+      setRamAssets(getAvailableAssets(sysList.filter((s) => s.category === "ram"), usedRamIds));
+    } catch (err) {
+      // ignore
+    }
+
+    alert("Removed");
+  };
+
   const openForm = (itemToEdit?: Asset) => {
     // Reset form state first
     if (!itemToEdit) {

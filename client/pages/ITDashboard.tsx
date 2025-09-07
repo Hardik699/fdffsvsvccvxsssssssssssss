@@ -1147,6 +1147,18 @@ export default function ITDashboard() {
                                   ? "Hide Passwords"
                                   : "Show Passwords"}
                               </Button>
+
+                              {/* Remove IT account button (closes sheet via SheetClose) */}
+                              <SheetClose asChild>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  className="border-slate-600 text-white"
+                                  onClick={() => handleRemoveIT(r.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-1" /> Remove
+                                </Button>
+                              </SheetClose>
                             </div>
                             <div className="mt-4 space-y-4 text-sm text-slate-300">
                               {(() => {

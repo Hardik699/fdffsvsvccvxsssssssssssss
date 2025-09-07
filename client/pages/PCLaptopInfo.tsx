@@ -953,7 +953,7 @@ export default function PCLaptopInfo() {
                       <TableHead>RAM Slot 1</TableHead>
                       <TableHead>RAM Slot 2</TableHead>
                       <TableHead>Total RAM</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className="sr-only">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1057,14 +1057,7 @@ export default function PCLaptopInfo() {
                           })()}
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Button size="sm" variant="ghost" onClick={() => openForm(a)}>
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleRemove(a.id)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <span className="text-slate-400">-</span>
                         </TableCell>
                       </TableRow>
                     ))}

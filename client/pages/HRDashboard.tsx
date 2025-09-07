@@ -308,6 +308,105 @@ export default function HRDashboard() {
     localStorage.setItem("attendanceRecords", JSON.stringify(updated));
   };
 
+  // Attendance modal state and helpers
+  const [attendanceModal, setAttendanceModal] = useState<{
+    open: boolean;
+    employee: Employee | null;
+    record: AttendanceRecord | null;
+  }>({ open: false, employee: null, record: null });
+
+  const formatTime = (d = new Date()) => {
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+  };
+
+  const calculateHours = (checkIn: string, checkOut: string) => {
+    try {
+      const [inH, inM] = checkIn.split(":").map(Number);
+      const [outH, outM] = checkOut.split(":").map(Number);
+      const inDate = new Date(`${selectedDate}T${String(inH).padStart(2, "0")}:${String(inM).padStart(2, "0")}:00`);
+      let outDate = new Date(`${selectedDate}T${String(outH).padStart(2, "0")}:${String(outM).padStart(2, "0")}:00`);
+      // handle overnight: if out is earlier than in, add one day to out
+      if (outDate <= inDate) {
+        outDate = new Date(outDate.getTime() + 24 * 60 * 60 * 1000);
+      }
+      const diffMs = outDate.getTime() - inDate.getTime();
+      const hours = diffMs / (1000 * 60 * 60);
+      return `${hours.toFixed(2)}h`;
+    } catch (e) {
+      return "";
+    }
+  };
+
+  const upsertAttendanceRecord = (rec: AttendanceRecord) => {
+    const existingIndex = attendanceRecords.findIndex(
+      (r) => r.employeeId === rec.employeeId && r.date === rec.date,
+    );
+    const updated = [...attendanceRecords];
+    if (existingIndex >= 0) {
+      updated[existingIndex] = { ...updated[existingIndex], ...rec };
+    } else {
+      updated.push(rec);
+    }
+    saveAttendanceRecords(updated);
+  };
+
+  const handleCheckIn = (employeeId: string) => {
+    const now = formatTime(new Date());
+    const rec: AttendanceRecord = {
+      employeeId,
+      date: selectedDate,
+      present: true,
+      checkIn: now,
+    } as AttendanceRecord;
+    upsertAttendanceRecord(rec);
+    // update modal if open
+    if (attendanceModal.open && attendanceModal.employee?.id === employeeId) {
+      setAttendanceModal((prev) => ({ ...prev, record: { ...(prev.record || {}), ...rec } }));
+    }
+  };
+
+  const handleCheckOut = (employeeId: string) => {
+    const now = formatTime(new Date());
+    const existing = attendanceRecords.find((r) => r.employeeId === employeeId && r.date === selectedDate);
+    const rec: AttendanceRecord = existing
+      ? { ...existing, checkOut: now }
+      : ({ employeeId, date: selectedDate, present: true, checkOut: now } as AttendanceRecord);
+    upsertAttendanceRecord(rec);
+    if (attendanceModal.open && attendanceModal.employee?.id === employeeId) {
+      setAttendanceModal((prev) => ({ ...prev, record: { ...(prev.record || {}), ...rec } }));
+    }
+  };
+
+  const openAttendanceFor = (employeeId: string) => {
+    const emp = employees.find((e) => e.id === employeeId) || null;
+    const rec = attendanceRecords.find((r) => r.employeeId === employeeId && r.date === selectedDate) || ({ employeeId, date: selectedDate, present: true } as AttendanceRecord);
+    setAttendanceModal({ open: true, employee: emp, record: rec });
+  };
+
+  const exportAttendanceCsv = () => {
+    try {
+      const rows = attendanceRecords.filter((r) => r.date === selectedDate);
+      if (!rows.length) {
+        alert("No attendance records for selected date");
+        return;
+      }
+      const headers = ["employeeId", "date", "checkIn", "checkOut", "present", "notes"];
+      const csv = [headers.join(",")].concat(
+        rows.map((r) => headers.map((h) => JSON.stringify((r as any)[h] ?? "")).join(",")),
+      ).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `attendance-${selectedDate}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to export CSV");
+    }
+  };
+
   // Document preview modal state
   const [documentPreviewModal, setDocumentPreviewModal] = useState<{
     isOpen: boolean;

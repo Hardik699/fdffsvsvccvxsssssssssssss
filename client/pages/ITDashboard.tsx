@@ -288,6 +288,40 @@ export default function ITDashboard() {
     alert("IT record created");
   };
 
+  const handleEditIT = (rec: ITRecord) => {
+    setNewEmpId(rec.employeeId || "");
+    setNewDepartment(rec.department || "");
+    setNewTableNumber(rec.tableNumber || "");
+    setNewSystemId(rec.systemId || "");
+    setNewProvider((rec as any).vitelGlobal?.provider === "vonage" ? "vonage" : "vitel");
+    setNewProviderId(rec.vitelGlobal?.id || "");
+    setNewLmId(rec.lmPlayer?.id || "");
+    setNewLmPassword(rec.lmPlayer?.password || "");
+    setNewEmails(
+      (rec.emails && rec.emails.length
+        ? rec.emails.map((e) => ({
+            provider: "CUSTOM",
+            providerCustom: "",
+            providerId: "",
+            email: e.email || "",
+            password: e.password || "",
+          }))
+        : [
+            {
+              provider: "CUSTOM",
+              providerCustom: "",
+              providerId: "",
+              email: "",
+              password: "",
+            },
+          ]) as NewEmailRow[],
+    );
+    setNewNotes(rec.notes || "");
+    setShowPw(false);
+    setLockPrefill(false);
+    setShowCreateITSheet(true);
+  };
+
   const stats = useMemo(() => {
     const uniqueEmpIds = new Set(records.map((r) => r.employeeId));
     const activeWithIT = employees.filter(
@@ -1351,12 +1385,7 @@ export default function ITDashboard() {
                               <div className="flex justify-end gap-2 pt-2">
                                 <Button
                                   className="bg-blue-500 hover:bg-blue-600 text-white"
-                                  onClick={() => {
-                                    const params = new URLSearchParams({
-                                      itId: r.id,
-                                    });
-                                    window.location.href = `/it?${params.toString()}`;
-                                  }}
+                                  onClick={() => handleEditIT(r)}
                                 >
                                   <Pencil className="h-4 w-4 mr-1" /> Edit IT
                                 </Button>

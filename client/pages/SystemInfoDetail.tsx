@@ -843,16 +843,6 @@ export default function SystemInfoDetail() {
                           <TableCell className="font-medium">{a.id}</TableCell>
                           <TableCell>{a.companyName}</TableCell>
                           <TableCell>{a.serialNumber}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Button size="sm" variant="ghost" onClick={() => handleEdit(a)}>
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button size="sm" variant="destructive" onClick={() => handleRemove(a.id)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
                           {categoryKey === "ram" && (
                             <TableCell>{(a as any).ramSize || "-"}</TableCell>
                           )}

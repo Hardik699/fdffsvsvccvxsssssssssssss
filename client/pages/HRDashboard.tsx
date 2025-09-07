@@ -1669,8 +1669,8 @@ Generated on: ${new Date().toLocaleString()}
                               <SelectValue placeholder="Select department" />
                             </SelectTrigger>
                             <SelectContent className="bg-slate-800 border-slate-700 text-white">
-                              {departments.map((dept) => (
-                                <SelectItem key={dept.id} value={dept.name}>
+                              {departments.map((dept, i) => (
+                                <SelectItem key={`${dept.id || dept.name}-${i}`} value={dept.name}>
                                   {dept.name}
                                 </SelectItem>
                               ))}
@@ -3345,12 +3345,12 @@ Generated on: ${new Date().toLocaleString()}
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="bg-slate-800 border-slate-700 text-white">
-                            {departments.map((dept) => (
-                              <SelectItem key={dept.id} value={dept.name}>
-                                {dept.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
+                              {departments.map((dept, i) => (
+                                <SelectItem key={`${dept.id || dept.name}-${i}`} value={dept.name}>
+                                  {dept.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
                         </Select>
                       ) : (
                         <p className="text-white p-2 bg-slate-800/30 rounded border border-slate-700">

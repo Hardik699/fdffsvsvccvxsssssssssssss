@@ -262,7 +262,7 @@ export default function MasterAdmin() {
       const userCredentials = JSON.parse(
         localStorage.getItem("userCredentials") || "{}",
       );
-      const employees = JSON.parse(localStorage.getItem("hrEmployees") || "[]");
+      let employees = JSON.parse(localStorage.getItem("hrEmployees") || "[]");
       const rawDepts = localStorage.getItem("departments") || "[]";
       let departments = JSON.parse(rawDepts);
       try {
@@ -287,17 +287,17 @@ export default function MasterAdmin() {
       const attendanceRecords = JSON.parse(
         localStorage.getItem("attendanceRecords") || "[]",
       );
-      const systemAssets = JSON.parse(
+      let systemAssets = JSON.parse(
         localStorage.getItem("systemAssets") || "[]",
       );
-      const pcLaptopAssets = JSON.parse(
+      let pcLaptopAssets = JSON.parse(
         localStorage.getItem("pcLaptopAssets") || "[]",
       );
-      const itAccounts = JSON.parse(localStorage.getItem("itAccounts") || "[]");
-      const salaryRecords = JSON.parse(
+      let itAccounts = JSON.parse(localStorage.getItem("itAccounts") || "[]");
+      let salaryRecords = JSON.parse(
         localStorage.getItem("salaryRecords") || "[]",
       );
-      const pendingITNotifications = JSON.parse(
+      let pendingITNotifications = JSON.parse(
         localStorage.getItem("pendingITNotifications") || "[]",
       );
 

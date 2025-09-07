@@ -1309,22 +1309,19 @@ export default function ITDashboard() {
                                   ? JSON.parse(assetsRaw)
                                   : [];
                                 let providerAsset: any = null;
-                                if (
-                                  (r as any).vitelGlobal?.provider === "vonage"
-                                ) {
-                                  providerAsset = assets.find(
-                                    (a: any) =>
-                                      a.category === "vonage" &&
-                                      (a.id === r.vitelGlobal?.id ||
-                                        a.vonageExtCode === r.vitelGlobal?.id ||
-                                        a.vonageNumber === r.vitelGlobal?.id),
+                                const findCategoryMatch = (a: any, keywords: string[]) => {
+                                  const cat = String(a?.category || "").toLowerCase();
+                                  return keywords.some((k) => cat.includes(k));
+                                };
+                                if ((r as any).vitelGlobal?.provider === "vonage") {
+                                  providerAsset = assets.find((a: any) =>
+                                    findCategoryMatch(a, ["vonage"]) &&
+                                    (a.id === r.vitelGlobal?.id || a.vonageExtCode === r.vitelGlobal?.id || a.vonageNumber === r.vitelGlobal?.id),
                                   );
                                 } else {
-                                  providerAsset = assets.find(
-                                    (a: any) =>
-                                      (a.category === "vitel" ||
-                                        a.category === "vitel-global") &&
-                                      a.id === r.vitelGlobal?.id,
+                                  providerAsset = assets.find((a: any) =>
+                                    findCategoryMatch(a, ["vitel", "vitel-global", "vitel global"]) &&
+                                    a.id === r.vitelGlobal?.id,
                                   );
                                 }
                                 return (
@@ -1334,35 +1331,23 @@ export default function ITDashboard() {
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
                                       <div>
-                                        Category:{" "}
-                                        {providerAsset?.category ||
-                                          (r as any).vitelGlobal?.provider ||
-                                          "-"}
+                                        Category: {providerAsset?.category || (r as any).vitelGlobal?.provider || "-"}
                                       </div>
                                       <div>ID: {r.vitelGlobal?.id || "-"}</div>
                                       <div>
-                                        Vendor:{" "}
-                                        {providerAsset?.vendorName || "-"}
+                                        Vendor: {providerAsset?.vendorName || "-"}
                                       </div>
                                       <div>
-                                        Company:{" "}
-                                        {providerAsset?.companyName || "-"}
+                                        Company: {providerAsset?.companyName || "-"}
                                       </div>
                                       <div>
-                                        Ext:{" "}
-                                        {providerAsset?.vonageExtCode || "-"}
+                                        Ext: {providerAsset?.vonageExtCode || "-"}
                                       </div>
                                       <div>
-                                        Number:{" "}
-                                        {providerAsset?.vonageNumber || "-"}
+                                        Number: {providerAsset?.vonageNumber || r.vitelGlobal?.id || "-"}
                                       </div>
                                       <div>
-                                        Password:{" "}
-                                        {providerAsset?.vonagePassword
-                                          ? previewSecrets
-                                            ? providerAsset.vonagePassword
-                                            : "���•••••"
-                                          : "-"}
+                                        Password: {providerAsset?.vonagePassword ? (previewSecrets ? providerAsset.vonagePassword : "••••••") : "-"}
                                       </div>
                                     </div>
                                   </div>

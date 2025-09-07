@@ -103,6 +103,48 @@ export default function AppNav() {
     return () => clearInterval(id);
   }, []);
 
+  // Pull data from server periodically when DB is online
+  const pullFromServer = async () => {
+    if (dbStatus !== "online") return;
+    try {
+      const headers = { "Content-Type": "application/json", "x-role": "admin" } as const;
+      // Fetch assets, it accounts, employees, pc laptops
+      const [assetsR, itR, empR, pcR] = await Promise.allSettled([
+        fetch("/api/hr/assets", { headers }),
+        fetch("/api/hr/it-accounts", { headers }),
+        fetch("/api/hr/employees", { headers }),
+        fetch("/api/hr/pc-laptops", { headers }).catch(() => ({} as any)),
+      ]);
+
+      if (assetsR.status === "fulfilled" && assetsR.value.ok) {
+        const j = await assetsR.value.json().catch(() => null);
+        if (j?.items) localStorage.setItem("systemAssets", JSON.stringify(j.items));
+      }
+      if (itR.status === "fulfilled" && itR.value.ok) {
+        const j = await itR.value.json().catch(() => null);
+        if (j?.items) localStorage.setItem("itAccounts", JSON.stringify(j.items));
+      }
+      if (empR.status === "fulfilled" && empR.value.ok) {
+        const j = await empR.value.json().catch(() => null);
+        if (j?.items) localStorage.setItem("hrEmployees", JSON.stringify(j.items));
+      }
+      if (pcR.status === "fulfilled" && pcR.value.ok) {
+        const j = await pcR.value.json().catch(() => null);
+        if (j?.items) localStorage.setItem("pcLaptopAssets", JSON.stringify(j.items));
+      }
+      setLastSync(new Date().toLocaleTimeString());
+    } catch (e) {
+      console.debug("Pull from server failed", e);
+    }
+  };
+
+  useEffect(() => {
+    // pull immediately when DB becomes online
+    if (dbStatus === "online") pullFromServer();
+    const id = setInterval(pullFromServer, 60 * 1000);
+    return () => clearInterval(id);
+  }, [dbStatus]);
+
   // DB health check
   useEffect(() => {
     let cancelled = false;

@@ -357,27 +357,6 @@ export default function HRDashboard() {
       if (savedAttendanceRecords)
         setAttendanceRecords(JSON.parse(savedAttendanceRecords));
 
-      // If there are fewer than 5 employees, seed richer demo data so cards show realistic content
-      (() => {
-      try {
-        const curr = savedEmployees ? JSON.parse(savedEmployees) : [];
-        if (!Array.isArray(curr) || curr.length < 5) {
-          import("@/lib/createDemoData")
-            .then((mod) => {
-              const assetsAdded = mod.loadDemoData();
-              const employeesAdded = mod.loadDemoEmployees();
-              // refresh local state from storage after seeding
-              const refreshed = JSON.parse(localStorage.getItem("hrEmployees") || "[]");
-              setEmployees(refreshed);
-              const refreshedDeps = JSON.parse(localStorage.getItem("departments") || "[]");
-              setDepartments(refreshedDeps);
-            })
-            .catch((err) => console.debug("Demo seeding failed", err));
-        }
-      } catch (err) {
-        console.debug("Demo seeding failed", err);
-      }
-    })();
 
       // Initialize with default departments if none exist
       if (!savedDepartments) {

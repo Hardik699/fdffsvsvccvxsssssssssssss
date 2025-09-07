@@ -289,14 +289,44 @@ export default function ITDashboard() {
   };
 
   const handleEditIT = (rec: ITRecord) => {
-    setNewEmpId(rec.employeeId || "");
+    // Determine employee id in case records were stored differently — prefer matching by id, fall back to name
+    let targetEmpId = "";
+    if (rec.employeeId) {
+      const found = employees.find((e) => e.id === rec.employeeId);
+      if (found) targetEmpId = found.id;
+    }
+    if (!targetEmpId && rec.employeeName) {
+      const foundByName = employees.find((e) => e.fullName === rec.employeeName);
+      if (foundByName) targetEmpId = foundByName.id;
+    }
+
+    setNewEmpId(targetEmpId || "");
     setNewDepartment(rec.department || "");
     setNewTableNumber(rec.tableNumber || "");
     setNewSystemId(rec.systemId || "");
-    setNewProvider((rec as any).vitelGlobal?.provider === "vonage" ? "vonage" : "vitel");
+
+    const provider = (rec as any).vitelGlobal?.provider === "vonage" ? "vonage" : "vitel";
+    setNewProvider(provider);
+
+    // Populate provider IDs immediately from local storage so the provider ID select has values
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const assets = raw ? (JSON.parse(raw) as any[]) : [];
+      const ids = assets
+        .filter((a: any) =>
+          provider === "vonage" ? a.category === "vonage" : a.category === "vitel" || a.category === "vitel-global",
+        )
+        .map((a: any) => (provider === "vonage" ? a.vonageExtCode || a.vonageNumber || a.id : a.id))
+        .filter((x: any) => typeof x === "string" && x.trim());
+      setNewProviderIds(ids);
+    } catch (err) {
+      setNewProviderIds([]);
+    }
+
     setNewProviderId(rec.vitelGlobal?.id || "");
     setNewLmId(rec.lmPlayer?.id || "");
     setNewLmPassword(rec.lmPlayer?.password || "");
+
     setNewEmails(
       (rec.emails && rec.emails.length
         ? rec.emails.map((e) => ({
@@ -316,6 +346,7 @@ export default function ITDashboard() {
             },
           ]) as NewEmailRow[],
     );
+
     setNewNotes(rec.notes || "");
     setShowPw(false);
     setLockPrefill(false);

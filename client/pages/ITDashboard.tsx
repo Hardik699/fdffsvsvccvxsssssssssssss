@@ -1115,7 +1115,7 @@ export default function ITDashboard() {
                           </SheetTrigger>
                           <SheetContent
                             side="right"
-                            className="bg-slate-900 border-slate-700 text-white w-screen max-w-none h-screen overflow-y-auto"
+                            className="bg-slate-900 border-slate-700 text-white w-full max-w-md h-full max-h-screen overflow-y-auto p-6"
                           >
                             <SheetHeader>
                               <SheetTitle className="text-white">

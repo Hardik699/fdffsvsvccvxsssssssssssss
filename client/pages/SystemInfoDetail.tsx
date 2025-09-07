@@ -299,7 +299,9 @@ export default function SystemInfoDetail() {
           : undefined,
     };
 
-    const next = [record, ...assets];
+    // if editing an existing asset, replace it; otherwise add to front
+    const exists = assets.find((x) => x.id === record.id);
+    const next = exists ? assets.map((x) => (x.id === record.id ? record : x)) : [record, ...assets];
     setAssets(next);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     // Sync to Neon DB
@@ -314,6 +316,45 @@ export default function SystemInfoDetail() {
     }
     setShowForm(false);
     alert("Saved");
+  };
+
+  const handleEdit = (asset: Asset) => {
+    setForm({
+      id: asset.id || "",
+      serialNumber: asset.serialNumber || "",
+      vendorName: asset.vendorName || "",
+      companyName: asset.companyName || "",
+      purchaseDate: asset.purchaseDate || "",
+      warrantyEndDate: asset.warrantyEndDate || "",
+      vonageNumber: (asset as any).vonageNumber || "",
+      vonageExtCode: (asset as any).vonageExtCode || "",
+      vonagePassword: (asset as any).vonagePassword || "",
+      vitelNumber: (asset as any).vitelNumber || "",
+      vitelExtCode: (asset as any).vitelExtCode || "",
+      vitelPassword: (asset as any).vitelPassword || "",
+      ramSize: (asset as any).ramSize || "",
+      ramType: (asset as any).ramType || "",
+      processorModel: (asset as any).processorModel || "",
+      storageType: (asset as any).storageType || "",
+      storageCapacity: (asset as any).storageCapacity || "",
+      quantity: "1",
+    });
+    setShowForm(true);
+  };
+
+  const handleRemove = (assetId: string) => {
+    if (!confirm("Remove this asset?")) return;
+    const remaining = assets.filter((a) => a.id !== assetId);
+    setAssets(remaining);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
+    try {
+      fetch("/api/hr/assets/upsert-batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-role": "admin" },
+        body: JSON.stringify({ items: remaining }),
+      }).catch(() => {});
+    } catch {}
+    alert("Removed");
   };
 
   return (

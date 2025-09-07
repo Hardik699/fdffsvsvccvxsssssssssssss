@@ -86,11 +86,59 @@ export default function PCLaptopInfo() {
   });
   const [totalRam, setTotalRam] = useState("0GB");
 
-  // Helper function to get used IDs for a specific component type
+  // Helper function to get used IDs for a specific component type from a list
   const getUsedIds = (items: Asset[], field: keyof Asset): string[] => {
     return items
       .map((item) => item[field])
       .filter((id): id is string => !!id && id !== "none");
+  };
+
+  // Helper to collect globally used asset IDs from localStorage sources (pcLaptopAssets and any asset assignments)
+  const getGloballyUsedAssetIds = (): Set<string> => {
+    const used = new Set<string>();
+    try {
+      const pcRaw = localStorage.getItem(STORAGE_KEY);
+      const pcs: Asset[] = pcRaw ? JSON.parse(pcRaw) : [];
+      pcs.forEach((p) => {
+        ([
+          "mouseId",
+          "keyboardId",
+          "motherboardId",
+          "cameraId",
+          "headphoneId",
+          "powerSupplyId",
+          "storageId",
+          "ramId",
+          "ramId2",
+        ] as (keyof Asset)[]).forEach((k) => {
+          const v = p[k];
+          if (v && v !== "none") used.add(String(v));
+        });
+      });
+
+      // asset assignments stored under several possible keys - check them
+      const assignmentKeys = ["asset_assignments", "assetAssignments", "assignments"];
+      for (const key of assignmentKeys) {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        try {
+          const arr = JSON.parse(raw);
+          if (Array.isArray(arr)) {
+            arr.forEach((a: any) => {
+              if (a && (a.asset_id || a.assetId || a.asset)) {
+                const aid = a.asset_id || a.assetId || a.asset;
+                if (aid) used.add(String(aid));
+              }
+            });
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+    return used;
   };
 
   // Helper function to filter available assets (not used)
@@ -146,7 +194,7 @@ export default function PCLaptopInfo() {
     const sysRaw = localStorage.getItem(SYS_STORAGE_KEY);
     const sysList: SysAsset[] = sysRaw ? JSON.parse(sysRaw) : [];
 
-    // Get all used IDs for each component type
+    // Get all used IDs for each component type (from current items)
     const usedMouseIds = getUsedIds(currentItems, "mouseId");
     const usedKeyboardIds = getUsedIds(currentItems, "keyboardId");
     const usedMotherboardIds = getUsedIds(currentItems, "motherboardId");
@@ -160,6 +208,19 @@ export default function PCLaptopInfo() {
         ...getUsedIds(currentItems as any, "ramId2" as any),
       ]),
     );
+
+    // Merge with globally used ids (from other localStorage sources)
+    const globalUsed = getGloballyUsedAssetIds();
+    globalUsed.forEach((id) => {
+      if (!usedMouseIds.includes(id)) usedMouseIds.push(id);
+      if (!usedKeyboardIds.includes(id)) usedKeyboardIds.push(id);
+      if (!usedMotherboardIds.includes(id)) usedMotherboardIds.push(id);
+      if (!usedCameraIds.includes(id)) usedCameraIds.push(id);
+      if (!usedHeadphoneIds.includes(id)) usedHeadphoneIds.push(id);
+      if (!usedPowerSupplyIds.includes(id)) usedPowerSupplyIds.push(id);
+      if (!usedStorageIds.includes(id)) usedStorageIds.push(id);
+      if (!usedRamIds.includes(id)) usedRamIds.push(id);
+    });
 
     // Filter out used IDs from available assets
     const allMouseAssets = sysList.filter((s) => s.category === "mouse");
@@ -211,7 +272,7 @@ export default function PCLaptopInfo() {
     try {
       const sysRaw = localStorage.getItem(SYS_STORAGE_KEY);
       const sysList: SysAsset[] = sysRaw ? JSON.parse(sysRaw) : [];
-      const usedMouseIds = getUsedIds(remaining, "mouseId");
+        const usedMouseIds = getUsedIds(remaining, "mouseId");
       const usedKeyboardIds = getUsedIds(remaining, "keyboardId");
       const usedMotherboardIds = getUsedIds(remaining, "motherboardId");
       const usedCameraIds = getUsedIds(remaining, "cameraId");
@@ -224,6 +285,19 @@ export default function PCLaptopInfo() {
           ...getUsedIds(remaining as any, "ramId2" as any),
         ]),
       );
+
+      // Merge with globally used ids
+      const globalUsedAfterRemoval = getGloballyUsedAssetIds();
+      globalUsedAfterRemoval.forEach((id) => {
+        if (!usedMouseIds.includes(id)) usedMouseIds.push(id);
+        if (!usedKeyboardIds.includes(id)) usedKeyboardIds.push(id);
+        if (!usedMotherboardIds.includes(id)) usedMotherboardIds.push(id);
+        if (!usedCameraIds.includes(id)) usedCameraIds.push(id);
+        if (!usedHeadphoneIds.includes(id)) usedHeadphoneIds.push(id);
+        if (!usedPowerSupplyIds.includes(id)) usedPowerSupplyIds.push(id);
+        if (!usedStorageIds.includes(id)) usedStorageIds.push(id);
+        if (!usedRamIds.includes(id)) usedRamIds.push(id);
+      });
 
       setMouseAssets(getAvailableAssets(sysList.filter((s) => s.category === "mouse"), usedMouseIds));
       setKeyboardAssets(getAvailableAssets(sysList.filter((s) => s.category === "keyboard"), usedKeyboardIds));
@@ -272,6 +346,19 @@ export default function PCLaptopInfo() {
         ...getUsedIds(itemsToCheck as any, "ramId2" as any),
       ]),
     );
+
+    // Merge with globally used ids so assets assigned elsewhere are excluded
+    const globalUsedForForm = getGloballyUsedAssetIds();
+    globalUsedForForm.forEach((id) => {
+      if (!usedMouseIds.includes(id)) usedMouseIds.push(id);
+      if (!usedKeyboardIds.includes(id)) usedKeyboardIds.push(id);
+      if (!usedMotherboardIds.includes(id)) usedMotherboardIds.push(id);
+      if (!usedCameraIds.includes(id)) usedCameraIds.push(id);
+      if (!usedHeadphoneIds.includes(id)) usedHeadphoneIds.push(id);
+      if (!usedPowerSupplyIds.includes(id)) usedPowerSupplyIds.push(id);
+      if (!usedStorageIds.includes(id)) usedStorageIds.push(id);
+      if (!usedRamIds.includes(id)) usedRamIds.push(id);
+    });
 
     // Get fresh available assets
     const freshMouseAssets = getAvailableAssets(

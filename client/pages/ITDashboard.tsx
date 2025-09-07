@@ -210,8 +210,17 @@ export default function ITDashboard() {
     if (depts) {
       try {
         const parsed = JSON.parse(depts) || [];
-        const deduped = Array.from(new Map(parsed.map((d: any) => [d.id || d.name, d])).values());
-        setDepartments(deduped);
+        const normalized = (Array.isArray(parsed) ? parsed : []).map((d: any, idx: number) => ({
+          id:
+            d?.id || `${String(d?.name || "dept").trim().toLowerCase().replace(/\s+/g, "-")}-${idx}`,
+          name: String(d?.name || "").trim(),
+        }));
+        const dedupedMap = new Map<string, any>();
+        normalized.forEach((d: any) => {
+          const key = String(d.name).trim().toLowerCase();
+          if (!dedupedMap.has(key)) dedupedMap.set(key, d);
+        });
+        setDepartments(Array.from(dedupedMap.values()));
       } catch (err) {
         setDepartments(JSON.parse(depts));
       }

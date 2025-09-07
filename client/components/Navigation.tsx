@@ -164,34 +164,32 @@ export default function AppNav() {
   // DB health check
   useEffect(() => {
     let cancelled = false;
-    const check = () => {
+    const check = async () => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5000);
       const url = `${window.location.origin}/api/db/health`;
-      fetch(url, { signal: controller.signal })
-        .then((r) => {
-          clearTimeout(timeout);
-          if (!r.ok) {
-            return r
-              .text()
-              .catch(() => "")
-              .then((text) => {
-                if (!cancelled) setDbStatus("offline");
-                console.debug("DB health check non-ok", r.status, text);
-              });
-          }
-          return r
-            .json()
-            .catch(() => null)
-            .then((j) => {
-              if (!cancelled) setDbStatus(j?.connected ? "online" : "offline");
-            });
-        })
-        .catch((err) => {
-          clearTimeout(timeout);
+      try {
+        const r = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (!r.ok) {
+          const text = await r.text().catch(() => "");
           if (!cancelled) setDbStatus("offline");
-          console.debug("DB health check failed (caught)", err?.message || err);
-        });
+          console.debug("DB health check non-ok", r.status, text);
+          return;
+        }
+        const j = await r.json().catch(() => null);
+        if (!cancelled) setDbStatus(j?.connected ? "online" : "offline");
+      } catch (err: any) {
+        clearTimeout(timeout);
+        // Silence AbortError - it's expected when request times out
+        if (err && err.name === "AbortError") {
+          // don't set offline repeatedly for aborts; just debug
+          console.debug("DB health check aborted (timeout)");
+          return;
+        }
+        if (!cancelled) setDbStatus("offline");
+        console.debug("DB health check failed (caught)", err?.message || err);
+      }
     };
     try {
       check();

@@ -211,17 +211,6 @@ export default function SystemInfoDetail() {
       .catch(() => {});
   }, [filtered.length, seedTried]);
 
-  // If URL contains ?open=1, open the add form (after assets are loaded)
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.get("open") && !openedFromQuery) {
-      // ensure assets loaded before opening
-      if (assets) {
-        openForm();
-        setOpenedFromQuery(true);
-      }
-    }
-  }, [location.search, assets, openedFromQuery]);
 
   const openForm = () => {
     const id = nextWxId(assets, categoryKey);

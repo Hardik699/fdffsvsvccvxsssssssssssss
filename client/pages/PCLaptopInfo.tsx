@@ -1144,7 +1144,14 @@ export default function PCLaptopInfo() {
                           })()}
                         </TableCell>
                         <TableCell>
-                          <span className="text-slate-400">-</span>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="ghost" onClick={() => openForm(a)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleRemove(a.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

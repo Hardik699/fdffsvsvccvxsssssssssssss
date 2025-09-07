@@ -377,16 +377,6 @@ export default function AppNav() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => navigate("/deploy")}
-                      className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-300"
-                      title="Deploy & Database"
-                    >
-                      <CloudUpload className="h-4 w-4 mr-2" />
-                      Deploy
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
                       onClick={() => navigate("/database-setup")}
                       className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-300"
                       title="Database Setup"

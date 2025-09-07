@@ -519,8 +519,7 @@ export default function MasterAdmin() {
           warrantyEndDate: r.warrantyEndDate,
           number: r.vonageNumber || r.vitelNumber || r.number || "",
           extCode: r.vonageExtCode || r.vitelExtCode || r.ext_code || "",
-          password: r.vonagePassword || r.vitelPassword || r.password || "",
-          metadata: r.metadata || "",
+          // omit password and metadata from category sheets for privacy
           createdAt: r.createdAt,
         }));
         // Sheet name as Category_<name>

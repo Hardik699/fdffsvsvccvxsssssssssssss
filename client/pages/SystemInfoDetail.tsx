@@ -182,6 +182,8 @@ export default function SystemInfoDetail() {
     quantity: "1",
   });
 
+  const [seedTried, setSeedTried] = useState(false);
+
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
     setAssets(raw ? JSON.parse(raw) : []);
@@ -191,6 +193,22 @@ export default function SystemInfoDetail() {
     () => assets.filter((a) => a.category === categoryKey),
     [assets, categoryKey],
   );
+
+  // If category has no assets, attempt to seed demo assets once (helps preview/demo environments)
+  useEffect(() => {
+    if (seedTried) return;
+    if (filtered.length > 0) return;
+    setSeedTried(true);
+    import("@/lib/createDemoData")
+      .then((mod) => {
+        const added = mod.loadDemoData();
+        if (added && added.length) {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          setAssets(raw ? JSON.parse(raw) : []);
+        }
+      })
+      .catch(() => {});
+  }, [filtered.length, seedTried]);
 
   const openForm = () => {
     const id = nextWxId(assets, categoryKey);

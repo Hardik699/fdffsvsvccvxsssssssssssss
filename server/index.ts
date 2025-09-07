@@ -156,6 +156,8 @@ export function createServer() {
   // Google Sheets integration (admin only recommended on client)
   app.post("/api/google-sheets/sync-master-data", syncMasterDataToGoogleSheets);
   app.get("/api/google-sheets/info", getSpreadsheetInfo);
+  // Admin route: sync directly from Postgres DB into Google Sheets
+  app.post("/api/google-sheets/sync-master-data-from-db", requireAdmin, syncMasterDataFromDb);
 
   // HR Google Sheets (separate spreadsheet)
   app.post("/api/google-sheets/sync-hr", syncHRDataToGoogleSheets);

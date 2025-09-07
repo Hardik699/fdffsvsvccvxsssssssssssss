@@ -305,6 +305,20 @@ export default function ITDashboard() {
     setNewTableNumber(rec.tableNumber || "");
     setNewSystemId(rec.systemId || "");
 
+    // Ensure the current record's systemId is present in the availableSystemIds
+    try {
+      const pcRaw = localStorage.getItem("pcLaptopAssets");
+      const pcIds = pcRaw ? (JSON.parse(pcRaw) as any[]).map((x) => x.id) : [];
+      const itRaw = localStorage.getItem("itAccounts");
+      const used = itRaw ? (JSON.parse(itRaw) as any[]).map((x: any) => x.systemId) : [];
+      const combined = pcIds.filter((id: string) => !used.includes(id) || id === rec.systemId);
+      // If the current systemId is not part of pcIds, still include it so the select can display it
+      if (rec.systemId && !combined.includes(rec.systemId)) combined.unshift(rec.systemId);
+      setAvailableSystemIds(combined);
+    } catch (err) {
+      // fallback: keep existing availableSystemIds
+    }
+
     const provider = (rec as any).vitelGlobal?.provider === "vonage" ? "vonage" : "vitel";
     setNewProvider(provider);
 

@@ -1313,31 +1313,26 @@ export default function ITDashboard() {
                                     a.id === r.vitelGlobal?.id,
                                   );
                                 }
+                                // compute fallbacks for provider details
+                                const displayCategory = providerAsset?.category || (r as any).vitelGlobal?.provider || "-";
+                                const displayId = r.vitelGlobal?.id || providerAsset?.id || "-";
+                                const displayVendor = providerAsset?.vendorName || providerAsset?.vendor || "-";
+                                const displayCompany = providerAsset?.companyName || providerAsset?.company || "-";
+                                const displayExt = providerAsset?.vonageExtCode || providerAsset?.vitelExtCode || providerAsset?.ext_code || (r as any).vitelGlobal?.extNumber || "-";
+                                const displayNumber = providerAsset?.vonageNumber || providerAsset?.vitelNumber || providerAsset?.number || (r as any).vitelGlobal?.id || "-";
+                                const displayPassword = providerAsset?.vonagePassword || providerAsset?.vitelPassword || providerAsset?.password || (r as any).vitelGlobal?.password || "-";
+
                                 return (
                                   <div className="rounded border border-slate-700 bg-slate-800/30 p-3">
-                                    <div className="font-medium text-white mb-2">
-                                      Provider Details
-                                    </div>
+                                    <div className="font-medium text-white mb-2">Provider Details</div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-                                      <div>
-                                        Category: {providerAsset?.category || (r as any).vitelGlobal?.provider || "-"}
-                                      </div>
-                                      <div>ID: {r.vitelGlobal?.id || "-"}</div>
-                                      <div>
-                                        Vendor: {providerAsset?.vendorName || "-"}
-                                      </div>
-                                      <div>
-                                        Company: {providerAsset?.companyName || "-"}
-                                      </div>
-                                      <div>
-                                        Ext: {providerAsset?.vonageExtCode || "-"}
-                                      </div>
-                                      <div>
-                                        Number: {providerAsset?.vonageNumber || r.vitelGlobal?.id || "-"}
-                                      </div>
-                                      <div>
-                                        Password: {providerAsset?.vonagePassword ? (previewSecrets ? providerAsset.vonagePassword : "••••••") : "-"}
-                                      </div>
+                                      <div>Category: {displayCategory}</div>
+                                      <div>ID: {displayId}</div>
+                                      <div>Vendor: {displayVendor}</div>
+                                      <div>Company: {displayCompany}</div>
+                                      <div>Ext: {displayExt}</div>
+                                      <div>Number: {displayNumber}</div>
+                                      <div>Password: {displayPassword ? (previewSecrets ? displayPassword : "••••••") : "-"}</div>
                                     </div>
                                   </div>
                                 );

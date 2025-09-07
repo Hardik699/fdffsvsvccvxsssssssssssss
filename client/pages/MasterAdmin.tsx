@@ -474,7 +474,12 @@ export default function MasterAdmin() {
       appendSheet("Attendance", attendance);
       appendSheet("SalaryRecords", salaryRecords);
 
-      appendSheet("System_Assets", sys);
+      // Sanitize system assets to avoid exporting sensitive or large metadata fields
+      const sanitizedSys = (sys || []).map((s: any) => {
+        const { vonagePassword, vitelPassword, password, metadata, ...rest } = s || {};
+        return rest;
+      });
+      appendSheet("System_Assets", sanitizedSys);
       appendSheet("PC_Laptops", pcs);
 
       const itFlat = it.map((r) => ({

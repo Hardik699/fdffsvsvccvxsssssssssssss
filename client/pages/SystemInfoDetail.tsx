@@ -31,6 +31,8 @@ import {
   Camera,
   Monitor,
   Phone,
+  Pencil,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -182,6 +184,8 @@ export default function SystemInfoDetail() {
     quantity: "1",
   });
 
+  const [seedTried, setSeedTried] = useState(false);
+
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
     setAssets(raw ? JSON.parse(raw) : []);
@@ -191,6 +195,22 @@ export default function SystemInfoDetail() {
     () => assets.filter((a) => a.category === categoryKey),
     [assets, categoryKey],
   );
+
+  // If category has no assets, attempt to seed demo assets once (helps preview/demo environments)
+  useEffect(() => {
+    if (seedTried) return;
+    if (filtered.length > 0) return;
+    setSeedTried(true);
+    import("@/lib/createDemoData")
+      .then((mod) => {
+        const added = mod.loadDemoData();
+        if (added && added.length) {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          setAssets(raw ? JSON.parse(raw) : []);
+        }
+      })
+      .catch(() => {});
+  }, [filtered.length, seedTried]);
 
   const openForm = () => {
     const id = nextWxId(assets, categoryKey);
@@ -277,7 +297,11 @@ export default function SystemInfoDetail() {
           : undefined,
     };
 
-    const next = [record, ...assets];
+    // if editing an existing asset, replace it; otherwise add to front
+    const exists = assets.find((x) => x.id === record.id);
+    const next = exists
+      ? assets.map((x) => (x.id === record.id ? record : x))
+      : [record, ...assets];
     setAssets(next);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     // Sync to Neon DB
@@ -292,6 +316,45 @@ export default function SystemInfoDetail() {
     }
     setShowForm(false);
     alert("Saved");
+  };
+
+  const handleEdit = (asset: Asset) => {
+    setForm({
+      id: asset.id || "",
+      serialNumber: asset.serialNumber || "",
+      vendorName: asset.vendorName || "",
+      companyName: asset.companyName || "",
+      purchaseDate: asset.purchaseDate || "",
+      warrantyEndDate: asset.warrantyEndDate || "",
+      vonageNumber: (asset as any).vonageNumber || "",
+      vonageExtCode: (asset as any).vonageExtCode || "",
+      vonagePassword: (asset as any).vonagePassword || "",
+      vitelNumber: (asset as any).vitelNumber || "",
+      vitelExtCode: (asset as any).vitelExtCode || "",
+      vitelPassword: (asset as any).vitelPassword || "",
+      ramSize: (asset as any).ramSize || "",
+      ramType: (asset as any).ramType || "",
+      processorModel: (asset as any).processorModel || "",
+      storageType: (asset as any).storageType || "",
+      storageCapacity: (asset as any).storageCapacity || "",
+      quantity: "1",
+    });
+    setShowForm(true);
+  };
+
+  const handleRemove = (assetId: string) => {
+    if (!confirm("Remove this asset?")) return;
+    const remaining = assets.filter((a) => a.id !== assetId);
+    setAssets(remaining);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
+    try {
+      fetch("/api/hr/assets/upsert-batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-role": "admin" },
+        body: JSON.stringify({ items: remaining }),
+      }).catch(() => {});
+    } catch {}
+    alert("Removed");
   };
 
   return (
@@ -712,6 +775,7 @@ export default function SystemInfoDetail() {
                         <TableHead>Password</TableHead>
                         <TableHead>Purchase Date</TableHead>
                         <TableHead>Warranty End Date</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     ) : (
                       <TableRow>
@@ -736,6 +800,7 @@ export default function SystemInfoDetail() {
                         <TableHead>Vendor</TableHead>
                         <TableHead>Purchase Date</TableHead>
                         <TableHead>Warranty End Date</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     )}
                   </TableHeader>
@@ -762,6 +827,24 @@ export default function SystemInfoDetail() {
                           </TableCell>
                           <TableCell>{a.purchaseDate}</TableCell>
                           <TableCell>{a.warrantyEndDate}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEdit(a)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleRemove(a.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ) : (
                         <TableRow key={a.id}>
@@ -792,6 +875,24 @@ export default function SystemInfoDetail() {
                           <TableCell>{a.vendorName}</TableCell>
                           <TableCell>{a.purchaseDate}</TableCell>
                           <TableCell>{a.warrantyEndDate}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEdit(a)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleRemove(a.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ),
                     )}

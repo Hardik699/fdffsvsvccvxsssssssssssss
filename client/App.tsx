@@ -19,6 +19,7 @@ import SystemInfoDetail from "./pages/SystemInfoDetail";
 import PCLaptopInfo from "./pages/PCLaptopInfo";
 import DemoDataView from "./pages/DemoDataView";
 import MasterAdmin from "./pages/MasterAdmin";
+import GadgetsManagement from "./pages/GadgetsManagement";
 import DeployPage from "./pages/Deploy";
 import DatabaseSetup from "./pages/DatabaseSetup";
 
@@ -45,6 +46,7 @@ const App = () => (
           <Route path="/pc-laptop-info" element={<PCLaptopInfo />} />
           <Route path="/demo-data" element={<DemoDataView />} />
           <Route path="/master-admin" element={<MasterAdmin />} />
+          <Route path="/gadgets-management" element={<GadgetsManagement />} />
           <Route path="/deploy" element={<DeployPage />} />
           <Route path="/database-setup" element={<DatabaseSetup />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

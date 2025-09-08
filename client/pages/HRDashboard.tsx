@@ -308,6 +308,141 @@ export default function HRDashboard() {
     localStorage.setItem("attendanceRecords", JSON.stringify(updated));
   };
 
+  // Attendance modal state and helpers
+  const [attendanceModal, setAttendanceModal] = useState<{
+    open: boolean;
+    employee: Employee | null;
+    record: AttendanceRecord | null;
+  }>({ open: false, employee: null, record: null });
+
+  const formatTime = (d = new Date()) => {
+    return d.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  };
+
+  const calculateHours = (checkIn: string, checkOut: string) => {
+    try {
+      const [inH, inM] = checkIn.split(":").map(Number);
+      const [outH, outM] = checkOut.split(":").map(Number);
+      const inDate = new Date(
+        `${selectedDate}T${String(inH).padStart(2, "0")}:${String(inM).padStart(2, "0")}:00`,
+      );
+      let outDate = new Date(
+        `${selectedDate}T${String(outH).padStart(2, "0")}:${String(outM).padStart(2, "0")}:00`,
+      );
+      // handle overnight: if out is earlier than in, add one day to out
+      if (outDate <= inDate) {
+        outDate = new Date(outDate.getTime() + 24 * 60 * 60 * 1000);
+      }
+      const diffMs = outDate.getTime() - inDate.getTime();
+      const hours = diffMs / (1000 * 60 * 60);
+      return `${hours.toFixed(2)}h`;
+    } catch (e) {
+      return "";
+    }
+  };
+
+  const upsertAttendanceRecord = (rec: AttendanceRecord) => {
+    const existingIndex = attendanceRecords.findIndex(
+      (r) => r.employeeId === rec.employeeId && r.date === rec.date,
+    );
+    const updated = [...attendanceRecords];
+    if (existingIndex >= 0) {
+      updated[existingIndex] = { ...updated[existingIndex], ...rec };
+    } else {
+      updated.push(rec);
+    }
+    saveAttendanceRecords(updated);
+  };
+
+  const handleCheckIn = (employeeId: string) => {
+    const now = formatTime(new Date());
+    const rec: AttendanceRecord = {
+      employeeId,
+      date: selectedDate,
+      present: true,
+      checkIn: now,
+    } as AttendanceRecord;
+    upsertAttendanceRecord(rec);
+    // update modal if open
+    if (attendanceModal.open && attendanceModal.employee?.id === employeeId) {
+      setAttendanceModal((prev) => ({
+        ...prev,
+        record: { ...(prev.record || {}), ...rec },
+      }));
+    }
+  };
+
+  const handleCheckOut = (employeeId: string) => {
+    const now = formatTime(new Date());
+    const existing = attendanceRecords.find(
+      (r) => r.employeeId === employeeId && r.date === selectedDate,
+    );
+    const rec: AttendanceRecord = existing
+      ? { ...existing, checkOut: now }
+      : ({
+          employeeId,
+          date: selectedDate,
+          present: true,
+          checkOut: now,
+        } as AttendanceRecord);
+    upsertAttendanceRecord(rec);
+    if (attendanceModal.open && attendanceModal.employee?.id === employeeId) {
+      setAttendanceModal((prev) => ({
+        ...prev,
+        record: { ...(prev.record || {}), ...rec },
+      }));
+    }
+  };
+
+  const openAttendanceFor = (employeeId: string) => {
+    const emp = employees.find((e) => e.id === employeeId) || null;
+    const rec =
+      attendanceRecords.find(
+        (r) => r.employeeId === employeeId && r.date === selectedDate,
+      ) ||
+      ({ employeeId, date: selectedDate, present: true } as AttendanceRecord);
+    setAttendanceModal({ open: true, employee: emp, record: rec });
+  };
+
+  function exportAttendanceCsv() {
+    try {
+      const rows = attendanceRecords.filter((r) => r.date === selectedDate);
+      if (!rows.length) {
+        alert("No attendance records for selected date");
+        return;
+      }
+      const headers = [
+        "employeeId",
+        "date",
+        "checkIn",
+        "checkOut",
+        "present",
+        "notes",
+      ];
+      const csv = [headers.join(",")]
+        .concat(
+          rows.map((r) =>
+            headers.map((h) => JSON.stringify((r as any)[h] ?? "")).join(","),
+          ),
+        )
+        .join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `attendance-${selectedDate}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to export CSV");
+    }
+  }
+
   // Document preview modal state
   const [documentPreviewModal, setDocumentPreviewModal] = useState<{
     isOpen: boolean;
@@ -351,7 +486,33 @@ export default function HRDashboard() {
       const savedAttendanceRecords = localStorage.getItem("attendanceRecords");
 
       if (savedEmployees) setEmployees(JSON.parse(savedEmployees));
-      if (savedDepartments) setDepartments(JSON.parse(savedDepartments));
+      if (savedDepartments) {
+        try {
+          const parsed = JSON.parse(savedDepartments) || [];
+          const normalized = (Array.isArray(parsed) ? parsed : []).map(
+            (d: any, idx: number) => ({
+              id:
+                d?.id ||
+                `${String(d?.name || "dept")
+                  .trim()
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")}-${idx}`,
+              name: String(d?.name || "").trim(),
+              manager: d?.manager || "",
+              employeeCount:
+                typeof d?.employeeCount === "number" ? d.employeeCount : 0,
+            }),
+          );
+          const dedupedMap = new Map<string, any>();
+          normalized.forEach((d: any) => {
+            const key = String(d.name).trim().toLowerCase();
+            if (!dedupedMap.has(key)) dedupedMap.set(key, d);
+          });
+          setDepartments(Array.from(dedupedMap.values()));
+        } catch (err) {
+          setDepartments(JSON.parse(savedDepartments));
+        }
+      }
       if (savedLeaveRequests) setLeaveRequests(JSON.parse(savedLeaveRequests));
       if (savedSalaryRecords) setSalaryRecords(JSON.parse(savedSalaryRecords));
       if (savedAttendanceRecords)
@@ -1118,159 +1279,17 @@ Generated on: ${new Date().toLocaleString()}
     const seeded = localStorage.getItem("demoEmployeesSeeded");
     if (seeded) return;
 
-    const savedEmployees: Employee[] = JSON.parse(
-      localStorage.getItem("hrEmployees") || "[]",
-    );
-    const savedDepartments: Department[] = JSON.parse(
-      localStorage.getItem("departments") || "[]",
-    );
-
-    if (savedEmployees.length >= 2) {
-      localStorage.setItem("demoEmployeesSeeded", "1");
-      return;
-    }
-
-    const img =
-      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==";
-
-    const emp1: Employee = {
-      id: `${Date.now()}-1`,
-      employeeId: `EMP${(Date.now() + 1).toString().slice(-4)}`,
-      fullName: "Rahul Sharma",
-      fatherName: "Mahesh Sharma",
-      motherName: "Suman Sharma",
-      birthDate: "1990-05-12",
-      bloodGroup: "B+",
-      mobileNumber: "+91 9876543210",
-      emergencyMobileNumber: "+91 9000000000",
-      alternativeMobileNumber: "+91 9999999999",
-      email: "rahul.sharma@example.com",
-      address: "A-12, Sector 21, Noida, UP",
-      permanentAddress: "Jaipur, Rajasthan",
-      photo: img,
-      joiningDate: "2023-04-01",
-      department: "Engineering",
-      position: "Software Engineer",
-      tableNumber: "5",
-      accountNumber: "012345678901",
-      ifscCode: "HDFC0001234",
-      bankPassbook: img,
-      aadhaarNumber: "1234 5678 9012",
-      panNumber: "ABCDE1234F",
-      uanNumber: "100200300400",
-      salary: "65000",
-      aadhaarCard: img,
-      panCard: img,
-      passport: img,
-      drivingLicense: img,
-      resume: img,
-      medicalCertificate: img,
-      educationCertificate: img,
-      experienceLetter: img,
-      status: "active",
-    };
-
-    const emp2: Employee = {
-      id: `${Date.now()}-2`,
-      employeeId: `EMP${(Date.now() + 2).toString().slice(-4)}`,
-      fullName: "Priya Verma",
-      fatherName: "Rakesh Verma",
-      motherName: "Anita Verma",
-      birthDate: "1994-11-23",
-      bloodGroup: "O+",
-      mobileNumber: "+91 9876543211",
-      emergencyMobileNumber: "+91 8888888888",
-      alternativeMobileNumber: "+91 7777777777",
-      email: "priya.verma@example.com",
-      address: "B-55, Andheri East, Mumbai",
-      permanentAddress: "Lucknow, UP",
-      photo: img,
-      joiningDate: "2022-09-15",
-      department: "HR",
-      position: "HR Executive",
-      tableNumber: "6",
-      accountNumber: "098765432109",
-      ifscCode: "SBI0004321",
-      bankPassbook: img,
-      aadhaarNumber: "9012 3456 7890",
-      panNumber: "PQRSX1234Z",
-      uanNumber: "400300200100",
-      salary: "42000",
-      aadhaarCard: img,
-      panCard: img,
-      passport: img,
-      drivingLicense: img,
-      resume: img,
-      medicalCertificate: img,
-      educationCertificate: img,
-      experienceLetter: img,
-      status: "active",
-    };
-
-    const newEmployees = [emp1, emp2];
-    const updatedEmployees = [...savedEmployees, ...newEmployees];
-    saveEmployees(updatedEmployees);
-
-    const deptCounts = (name: string) =>
-      updatedEmployees.filter(
-        (e) => e.department === name && e.status === "active",
-      ).length;
-    if (savedDepartments.length === 0) {
-      const defaultDepartments: Department[] = [
-        {
-          id: "1",
-          name: "Engineering",
-          manager: "John Smith",
-          employeeCount: 0,
-        },
-        {
-          id: "2",
-          name: "Marketing",
-          manager: "Sarah Johnson",
-          employeeCount: 0,
-        },
-        { id: "3", name: "Sales", manager: "Mike Davis", employeeCount: 0 },
-        { id: "4", name: "HR", manager: "Lisa Wilson", employeeCount: 0 },
-        { id: "5", name: "Finance", manager: "David Brown", employeeCount: 0 },
-        {
-          id: "6",
-          name: "Operations",
-          manager: "Emma Wilson",
-          employeeCount: 0,
-        },
-      ];
-      const seededDepartments = defaultDepartments.map((d) => ({
-        ...d,
-        employeeCount: deptCounts(d.name),
-      }));
-      saveDepartments(seededDepartments);
-    } else {
-      const updatedDepartments = savedDepartments.map((d) => ({
-        ...d,
-        employeeCount: deptCounts(d.name),
-      }));
-      saveDepartments(updatedDepartments);
-    }
-
-    const pending = JSON.parse(
-      localStorage.getItem("pendingITNotifications") || "[]",
-    );
-    const newNotifs = newEmployees.map((employee) => ({
-      id: employee.id,
-      employeeId: employee.id,
-      employeeName: employee.fullName,
-      department: employee.department,
-      tableNumber: employee.tableNumber,
-      email: employee.email,
-      createdAt: new Date().toISOString(),
-      processed: false,
-    }));
-    localStorage.setItem(
-      "pendingITNotifications",
-      JSON.stringify([...pending, ...newNotifs]),
-    );
-
-    localStorage.setItem("demoEmployeesSeeded", "1");
+    (() => {
+      import("@/lib/createDemoData")
+        .then((mod) => {
+          const assetsAdded = mod.loadDemoData();
+          const added = mod.loadDemoEmployees();
+          if ((assetsAdded && assetsAdded.length) || (added && added.length)) {
+            localStorage.setItem("demoEmployeesSeeded", "1");
+          }
+        })
+        .catch((err) => console.debug("Failed to seed demo employees", err));
+    })();
   }, [userRole]);
 
   // Load employees from DB (if available) and sync local copy
@@ -1800,8 +1819,11 @@ Generated on: ${new Date().toLocaleString()}
                               <SelectValue placeholder="Select department" />
                             </SelectTrigger>
                             <SelectContent className="bg-slate-800 border-slate-700 text-white">
-                              {departments.map((dept) => (
-                                <SelectItem key={dept.id} value={dept.name}>
+                              {departments.map((dept, i) => (
+                                <SelectItem
+                                  key={`${dept.id || dept.name}-${i}`}
+                                  value={dept.name}
+                                >
                                   {dept.name}
                                 </SelectItem>
                               ))}
@@ -2232,8 +2254,11 @@ Generated on: ${new Date().toLocaleString()}
                       </SelectTrigger>
                       <SelectContent className="bg-slate-800 border-slate-700 text-white">
                         <SelectItem value="all">All Departments</SelectItem>
-                        {departments.map((dept) => (
-                          <SelectItem key={dept.id} value={dept.name}>
+                        {departments.map((dept, i) => (
+                          <SelectItem
+                            key={`${dept.id || dept.name}-${i}`}
+                            value={dept.name}
+                          >
                             {dept.name} (
                             {getEmployeesByDepartment(dept.name).length})
                           </SelectItem>
@@ -2837,20 +2862,312 @@ Generated on: ${new Date().toLocaleString()}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12">
-                  <Clock className="h-16 w-16 text-slate-600 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-white mb-2">
-                    Attendance System
-                  </h3>
-                  <p className="text-slate-400 mb-4">
-                    Track employee check-ins, check-outs, and working hours
-                  </p>
-                  <Badge
-                    variant="secondary"
-                    className="bg-blue-500/20 text-blue-400"
-                  >
-                    Coming Soon
-                  </Badge>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Left: Active employee list */}
+                  <div className="md:col-span-1">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-medium text-white">
+                        Active Employees
+                      </h4>
+                      <div className="text-xs text-slate-400">
+                        Shift: 6:00 PM - 3:30 AM
+                      </div>
+                    </div>
+                    <div className="max-h-96 overflow-auto rounded border border-slate-700 bg-slate-800/30 p-2 space-y-2">
+                      {(employees.filter((e) => e.status === "active") || [])
+                        .length === 0 ? (
+                        <div className="text-slate-400 text-sm p-4 text-center">
+                          No active employees
+                        </div>
+                      ) : (
+                        employees
+                          .filter((e) => e.status === "active")
+                          .map((emp) => {
+                            const rec = attendanceDayMap[emp.id];
+                            const checkedIn = !!rec?.checkIn;
+                            const checkedOut = !!rec?.checkOut;
+                            return (
+                              <div
+                                key={emp.id}
+                                className="flex items-center justify-between p-2 rounded hover:bg-slate-800/40"
+                              >
+                                <div>
+                                  <div className="text-sm text-white font-medium">
+                                    {emp.fullName}
+                                  </div>
+                                  <div className="text-xs text-slate-400">
+                                    {emp.position || emp.department || "-"}
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  {!checkedIn && (
+                                    <Button
+                                      size="sm"
+                                      className="text-xs"
+                                      onClick={() => handleCheckIn(emp.id)}
+                                    >
+                                      Check In
+                                    </Button>
+                                  )}
+                                  {checkedIn && !checkedOut && (
+                                    <Button
+                                      size="sm"
+                                      className="text-xs"
+                                      onClick={() => handleCheckOut(emp.id)}
+                                    >
+                                      Check Out
+                                    </Button>
+                                  )}
+                                  {checkedIn && checkedOut && (
+                                    <Badge className="text-xs bg-green-600">
+                                      Done
+                                    </Badge>
+                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-xs"
+                                    onClick={() => openAttendanceFor(emp.id)}
+                                  >
+                                    Open
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right: Details and today's attendance */}
+                  <div className="md:col-span-2">
+                    <div className="rounded border border-slate-700 bg-slate-800/30 p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h4 className="text-lg font-medium text-white">
+                            Today's Attendance ({selectedDate})
+                          </h4>
+                          <div className="text-xs text-slate-400">
+                            Shift: 18:00 - 03:30 (overnight)
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Input
+                            type="date"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="bg-slate-900/60 text-white"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setSelectedDate(
+                                new Date().toISOString().split("T")[0],
+                              );
+                            }}
+                          >
+                            Today
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-3">
+                        {/* Selected employee panel or summary list */}
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-slate-400">
+                            Click an employee on the left to view full
+                            attendance controls and history.
+                          </div>
+                          <div>
+                            <Button onClick={exportAttendanceCsv} size="sm">
+                              Export CSV
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="overflow-auto max-h-72 rounded border border-slate-700 bg-slate-900/20 p-2">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Employee</TableHead>
+                                <TableHead>Check In</TableHead>
+                                <TableHead>Check Out</TableHead>
+                                <TableHead>Hours</TableHead>
+                                <TableHead>Notes</TableHead>
+                                <TableHead>Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {(
+                                employees.filter(
+                                  (e) => e.status === "active",
+                                ) || []
+                              ).map((emp) => {
+                                const rec = attendanceDayMap[emp.id];
+                                const hours =
+                                  rec && rec.checkIn && rec.checkOut
+                                    ? calculateHours(rec.checkIn, rec.checkOut)
+                                    : "";
+                                return (
+                                  <TableRow key={emp.id}>
+                                    <TableCell className="text-sm">
+                                      {emp.fullName}
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      {rec?.checkIn || "-"}
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      {rec?.checkOut || "-"}
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      {hours}
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      {rec?.notes || "-"}
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      <div className="flex items-center space-x-2">
+                                        {!rec?.checkIn && (
+                                          <Button
+                                            size="xs"
+                                            onClick={() =>
+                                              handleCheckIn(emp.id)
+                                            }
+                                          >
+                                            In
+                                          </Button>
+                                        )}
+                                        {rec?.checkIn && !rec?.checkOut && (
+                                          <Button
+                                            size="xs"
+                                            onClick={() =>
+                                              handleCheckOut(emp.id)
+                                            }
+                                          >
+                                            Out
+                                          </Button>
+                                        )}
+                                        <Button
+                                          size="xs"
+                                          variant="ghost"
+                                          onClick={() =>
+                                            openAttendanceFor(emp.id)
+                                          }
+                                        >
+                                          Details
+                                        </Button>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Attendance modal/drawer */}
+                    {attendanceModal.open && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                        <div className="w-full max-w-2xl p-4">
+                          <Card className="bg-slate-900 border-slate-700">
+                            <CardHeader>
+                              <CardTitle className="text-white">
+                                Attendance for{" "}
+                                {attendanceModal.employee?.fullName}
+                              </CardTitle>
+                              <CardDescription className="text-slate-400">
+                                Date: {attendanceModal.record?.date}
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <div className="text-slate-400 text-sm">
+                                    Check In
+                                  </div>
+                                  <div className="text-white font-medium text-lg">
+                                    {attendanceModal.record?.checkIn || "-"}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-slate-400 text-sm">
+                                    Check Out
+                                  </div>
+                                  <div className="text-white font-medium text-lg">
+                                    {attendanceModal.record?.checkOut || "-"}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-slate-400 text-sm">
+                                    Hours
+                                  </div>
+                                  <div className="text-white font-medium text-lg">
+                                    {attendanceModal.record?.checkIn &&
+                                    attendanceModal.record?.checkOut
+                                      ? calculateHours(
+                                          attendanceModal.record.checkIn!,
+                                          attendanceModal.record.checkOut!,
+                                        )
+                                      : "-"}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-slate-400 text-sm">
+                                    Present
+                                  </div>
+                                  <div className="text-white font-medium">
+                                    {attendanceModal.record?.present
+                                      ? "Yes"
+                                      : "No"}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="mt-4 flex items-center space-x-2">
+                                {!attendanceModal.record?.checkIn && (
+                                  <Button
+                                    onClick={() =>
+                                      handleCheckIn(
+                                        attendanceModal.employee!.id,
+                                      )
+                                    }
+                                  >
+                                    Check In
+                                  </Button>
+                                )}
+                                {attendanceModal.record?.checkIn &&
+                                  !attendanceModal.record?.checkOut && (
+                                    <Button
+                                      onClick={() =>
+                                        handleCheckOut(
+                                          attendanceModal.employee!.id,
+                                        )
+                                      }
+                                    >
+                                      Check Out
+                                    </Button>
+                                  )}
+                                <Button
+                                  variant="outline"
+                                  onClick={() =>
+                                    setAttendanceModal({
+                                      open: false,
+                                      employee: null,
+                                      record: null,
+                                    })
+                                  }
+                                >
+                                  Close
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -3476,8 +3793,11 @@ Generated on: ${new Date().toLocaleString()}
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent className="bg-slate-800 border-slate-700 text-white">
-                            {departments.map((dept) => (
-                              <SelectItem key={dept.id} value={dept.name}>
+                            {departments.map((dept, i) => (
+                              <SelectItem
+                                key={`${dept.id || dept.name}-${i}`}
+                                value={dept.name}
+                              >
                                 {dept.name}
                               </SelectItem>
                             ))}

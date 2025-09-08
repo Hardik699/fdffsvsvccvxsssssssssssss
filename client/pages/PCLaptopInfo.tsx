@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
-import { Edit } from "lucide-react";
+import { Pencil, Trash2, Edit } from "lucide-react";
 
 type Asset = {
   id: string;
@@ -86,11 +86,65 @@ export default function PCLaptopInfo() {
   });
   const [totalRam, setTotalRam] = useState("0GB");
 
-  // Helper function to get used IDs for a specific component type
+  // Helper function to get used IDs for a specific component type from a list
   const getUsedIds = (items: Asset[], field: keyof Asset): string[] => {
     return items
       .map((item) => item[field])
       .filter((id): id is string => !!id && id !== "none");
+  };
+
+  // Helper to collect globally used asset IDs from localStorage sources (pcLaptopAssets and any asset assignments)
+  const getGloballyUsedAssetIds = (): Set<string> => {
+    const used = new Set<string>();
+    try {
+      const pcRaw = localStorage.getItem(STORAGE_KEY);
+      const pcs: Asset[] = pcRaw ? JSON.parse(pcRaw) : [];
+      pcs.forEach((p) => {
+        (
+          [
+            "mouseId",
+            "keyboardId",
+            "motherboardId",
+            "cameraId",
+            "headphoneId",
+            "powerSupplyId",
+            "storageId",
+            "ramId",
+            "ramId2",
+          ] as (keyof Asset)[]
+        ).forEach((k) => {
+          const v = p[k];
+          if (v && v !== "none") used.add(String(v));
+        });
+      });
+
+      // asset assignments stored under several possible keys - check them
+      const assignmentKeys = [
+        "asset_assignments",
+        "assetAssignments",
+        "assignments",
+      ];
+      for (const key of assignmentKeys) {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        try {
+          const arr = JSON.parse(raw);
+          if (Array.isArray(arr)) {
+            arr.forEach((a: any) => {
+              if (a && (a.asset_id || a.assetId || a.asset)) {
+                const aid = a.asset_id || a.assetId || a.asset;
+                if (aid) used.add(String(aid));
+              }
+            });
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+    return used;
   };
 
   // Helper function to filter available assets (not used)
@@ -146,7 +200,7 @@ export default function PCLaptopInfo() {
     const sysRaw = localStorage.getItem(SYS_STORAGE_KEY);
     const sysList: SysAsset[] = sysRaw ? JSON.parse(sysRaw) : [];
 
-    // Get all used IDs for each component type
+    // Get all used IDs for each component type (from current items)
     const usedMouseIds = getUsedIds(currentItems, "mouseId");
     const usedKeyboardIds = getUsedIds(currentItems, "keyboardId");
     const usedMotherboardIds = getUsedIds(currentItems, "motherboardId");
@@ -160,6 +214,19 @@ export default function PCLaptopInfo() {
         ...getUsedIds(currentItems as any, "ramId2" as any),
       ]),
     );
+
+    // Merge with globally used ids (from other localStorage sources)
+    const globalUsed = getGloballyUsedAssetIds();
+    globalUsed.forEach((id) => {
+      if (!usedMouseIds.includes(id)) usedMouseIds.push(id);
+      if (!usedKeyboardIds.includes(id)) usedKeyboardIds.push(id);
+      if (!usedMotherboardIds.includes(id)) usedMotherboardIds.push(id);
+      if (!usedCameraIds.includes(id)) usedCameraIds.push(id);
+      if (!usedHeadphoneIds.includes(id)) usedHeadphoneIds.push(id);
+      if (!usedPowerSupplyIds.includes(id)) usedPowerSupplyIds.push(id);
+      if (!usedStorageIds.includes(id)) usedStorageIds.push(id);
+      if (!usedRamIds.includes(id)) usedRamIds.push(id);
+    });
 
     // Filter out used IDs from available assets
     const allMouseAssets = sysList.filter((s) => s.category === "mouse");
@@ -202,6 +269,97 @@ export default function PCLaptopInfo() {
     openForm();
   };
 
+  const handleRemove = (itemId: string) => {
+    if (!confirm("Remove this PC/Laptop record?")) return;
+    const remaining = items.filter((it) => it.id !== itemId);
+    setItems(remaining);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining));
+    // Update available assets after removal
+    try {
+      const sysRaw = localStorage.getItem(SYS_STORAGE_KEY);
+      const sysList: SysAsset[] = sysRaw ? JSON.parse(sysRaw) : [];
+      const usedMouseIds = getUsedIds(remaining, "mouseId");
+      const usedKeyboardIds = getUsedIds(remaining, "keyboardId");
+      const usedMotherboardIds = getUsedIds(remaining, "motherboardId");
+      const usedCameraIds = getUsedIds(remaining, "cameraId");
+      const usedHeadphoneIds = getUsedIds(remaining, "headphoneId");
+      const usedPowerSupplyIds = getUsedIds(remaining, "powerSupplyId");
+      const usedStorageIds = getUsedIds(remaining as any, "storageId" as any);
+      const usedRamIds = Array.from(
+        new Set([
+          ...getUsedIds(remaining, "ramId"),
+          ...getUsedIds(remaining as any, "ramId2" as any),
+        ]),
+      );
+
+      // Merge with globally used ids
+      const globalUsedAfterRemoval = getGloballyUsedAssetIds();
+      globalUsedAfterRemoval.forEach((id) => {
+        if (!usedMouseIds.includes(id)) usedMouseIds.push(id);
+        if (!usedKeyboardIds.includes(id)) usedKeyboardIds.push(id);
+        if (!usedMotherboardIds.includes(id)) usedMotherboardIds.push(id);
+        if (!usedCameraIds.includes(id)) usedCameraIds.push(id);
+        if (!usedHeadphoneIds.includes(id)) usedHeadphoneIds.push(id);
+        if (!usedPowerSupplyIds.includes(id)) usedPowerSupplyIds.push(id);
+        if (!usedStorageIds.includes(id)) usedStorageIds.push(id);
+        if (!usedRamIds.includes(id)) usedRamIds.push(id);
+      });
+
+      setMouseAssets(
+        getAvailableAssets(
+          sysList.filter((s) => s.category === "mouse"),
+          usedMouseIds,
+        ),
+      );
+      setKeyboardAssets(
+        getAvailableAssets(
+          sysList.filter((s) => s.category === "keyboard"),
+          usedKeyboardIds,
+        ),
+      );
+      setMotherboardAssets(
+        getAvailableAssets(
+          sysList.filter((s) => s.category === "motherboard"),
+          usedMotherboardIds,
+        ),
+      );
+      setCameraAssets(
+        getAvailableAssets(
+          sysList.filter((s) => s.category === "camera"),
+          usedCameraIds,
+        ),
+      );
+      setHeadphoneAssets(
+        getAvailableAssets(
+          sysList.filter((s) => s.category === "headphone"),
+          usedHeadphoneIds,
+        ),
+      );
+      setPowerSupplyAssets(
+        getAvailableAssets(
+          sysList.filter((s) => s.category === "power-supply"),
+          usedPowerSupplyIds,
+        ),
+      );
+      setStorageAssets(
+        getAvailableAssets(
+          sysList.filter((s) => s.category === "storage"),
+          usedStorageIds,
+        ),
+      );
+      setRamAssets(
+        getAvailableAssets(
+          sysList.filter((s) => s.category === "ram"),
+          usedRamIds,
+        ),
+      );
+    } catch (err) {
+      // ignore
+    }
+
+    alert("Removed");
+  };
+
   const openForm = (itemToEdit?: Asset) => {
     // Reset form state first
     if (!itemToEdit) {
@@ -234,6 +392,19 @@ export default function PCLaptopInfo() {
         ...getUsedIds(itemsToCheck as any, "ramId2" as any),
       ]),
     );
+
+    // Merge with globally used ids so assets assigned elsewhere are excluded
+    const globalUsedForForm = getGloballyUsedAssetIds();
+    globalUsedForForm.forEach((id) => {
+      if (!usedMouseIds.includes(id)) usedMouseIds.push(id);
+      if (!usedKeyboardIds.includes(id)) usedKeyboardIds.push(id);
+      if (!usedMotherboardIds.includes(id)) usedMotherboardIds.push(id);
+      if (!usedCameraIds.includes(id)) usedCameraIds.push(id);
+      if (!usedHeadphoneIds.includes(id)) usedHeadphoneIds.push(id);
+      if (!usedPowerSupplyIds.includes(id)) usedPowerSupplyIds.push(id);
+      if (!usedStorageIds.includes(id)) usedStorageIds.push(id);
+      if (!usedRamIds.includes(id)) usedRamIds.push(id);
+    });
 
     // Get fresh available assets
     const freshMouseAssets = getAvailableAssets(
@@ -915,7 +1086,7 @@ export default function PCLaptopInfo() {
                       <TableHead>RAM Slot 1</TableHead>
                       <TableHead>RAM Slot 2</TableHead>
                       <TableHead>Total RAM</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className="sr-only">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1019,14 +1190,22 @@ export default function PCLaptopInfo() {
                           })()}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            onClick={() => openForm(a)}
-                            size="sm"
-                            className="bg-blue-500 hover:bg-blue-600 text-white flex items-center gap-1"
-                          >
-                            <Edit className="h-3 w-3" />
-                            Edit
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => openForm(a)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleRemove(a.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

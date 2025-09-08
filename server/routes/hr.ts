@@ -307,26 +307,67 @@ const upsertAssetsBatch: RequestHandler = async (req, res, next) => {
       // Mirror into per-category table
       const catTable = getCategoryTable(a.category);
       if (catTable) {
-        await pool.query(
-          `INSERT INTO ${catTable} (id, serial_number, vendor_name, purchase_date, warranty_end_date, metadata, created_at)
-           VALUES ($1,$2,$3,$4,$5,$6,$7)
-           ON CONFLICT (id) DO UPDATE SET
-             serial_number = EXCLUDED.serial_number,
-             vendor_name = EXCLUDED.vendor_name,
-             purchase_date = EXCLUDED.purchase_date,
-             warranty_end_date = EXCLUDED.warranty_end_date,
-             metadata = EXCLUDED.metadata,
-             created_at = LEAST(${catTable}.created_at, EXCLUDED.created_at)`,
-          [
-            a.id,
-            a.serialNumber,
-            a.vendorName,
-            purchase,
-            warranty,
-            JSON.stringify(meta),
-            createdAt,
-          ],
-        );
+        // Special cases for telephony categories which have different columns
+        if (catTable === "vonage_numbers") {
+          await pool.query(
+            `INSERT INTO vonage_numbers (id, number, ext_code, password, metadata, created_at)
+             VALUES ($1,$2,$3,$4,$5,$6)
+             ON CONFLICT (id) DO UPDATE SET
+               number = EXCLUDED.number,
+               ext_code = EXCLUDED.ext_code,
+               password = EXCLUDED.password,
+               metadata = EXCLUDED.metadata,
+               created_at = LEAST(vonage_numbers.created_at, EXCLUDED.created_at)`,
+            [
+              a.id,
+              (a as any).vonageNumber ?? (a as any).number ?? null,
+              (a as any).vonageExtCode ?? (a as any).ext_code ?? null,
+              (a as any).vonagePassword ?? (a as any).password ?? null,
+              JSON.stringify(meta),
+              createdAt,
+            ],
+          );
+        } else if (catTable === "vitel_global_numbers") {
+          await pool.query(
+            `INSERT INTO vitel_global_numbers (id, number, ext_code, password, metadata, created_at)
+             VALUES ($1,$2,$3,$4,$5,$6)
+             ON CONFLICT (id) DO UPDATE SET
+               number = EXCLUDED.number,
+               ext_code = EXCLUDED.ext_code,
+               password = EXCLUDED.password,
+               metadata = EXCLUDED.metadata,
+               created_at = LEAST(vitel_global_numbers.created_at, EXCLUDED.created_at)`,
+            [
+              a.id,
+              (a as any).vitelNumber ?? (a as any).number ?? null,
+              (a as any).vitelExtCode ?? (a as any).ext_code ?? null,
+              (a as any).vitelPassword ?? (a as any).password ?? null,
+              JSON.stringify(meta),
+              createdAt,
+            ],
+          );
+        } else {
+          await pool.query(
+            `INSERT INTO ${catTable} (id, serial_number, vendor_name, purchase_date, warranty_end_date, metadata, created_at)
+             VALUES ($1,$2,$3,$4,$5,$6,$7)
+             ON CONFLICT (id) DO UPDATE SET
+               serial_number = EXCLUDED.serial_number,
+               vendor_name = EXCLUDED.vendor_name,
+               purchase_date = EXCLUDED.purchase_date,
+               warranty_end_date = EXCLUDED.warranty_end_date,
+               metadata = EXCLUDED.metadata,
+               created_at = LEAST(${catTable}.created_at, EXCLUDED.created_at)`,
+            [
+              a.id,
+              a.serialNumber,
+              a.vendorName,
+              purchase,
+              warranty,
+              JSON.stringify(meta),
+              createdAt,
+            ],
+          );
+        }
       }
     }
     res.json({ upserted: items.length });
@@ -361,6 +402,17 @@ const createItAccount: RequestHandler = async (req, res, next) => {
       [id, empId, JSON.stringify(req.body || {}), now],
     );
     res.status(201).json({ id });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const deleteItAccount: RequestHandler = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: "Missing id" });
+    await pool.query(`DELETE FROM it_accounts WHERE id = $1`, [id]);
+    res.json({ id });
   } catch (err) {
     next(err);
   }
@@ -501,6 +553,7 @@ export function hrRouter(): Router {
   router.post("/assets/upsert-batch", requireAdmin, upsertAssetsBatch);
   router.get("/it-accounts", listItAccounts);
   router.post("/it-accounts", requireAdmin, createItAccount);
+  router.delete("/it-accounts/:id", requireAdmin, deleteItAccount);
   router.post("/pc-laptops/upsert-batch", requireAdmin, upsertPcLaptopsBatch);
   router.get("/assignments", listAssignments);
   router.post(

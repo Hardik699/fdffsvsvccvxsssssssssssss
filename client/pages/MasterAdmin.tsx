@@ -253,7 +253,7 @@ export default function MasterAdmin() {
       .catch(() => setHrConfigured(false));
   }, []);
 
-  const loadAllData = () => {
+  const loadAllData = async () => {
     try {
       setLoading(true);
 
@@ -262,27 +262,52 @@ export default function MasterAdmin() {
       const userCredentials = JSON.parse(
         localStorage.getItem("userCredentials") || "{}",
       );
-      const employees = JSON.parse(localStorage.getItem("hrEmployees") || "[]");
-      const departments = JSON.parse(
-        localStorage.getItem("departments") || "[]",
-      );
+      let employees = JSON.parse(localStorage.getItem("hrEmployees") || "[]");
+      const rawDepts = localStorage.getItem("departments") || "[]";
+      let departments = JSON.parse(rawDepts);
+      try {
+        const parsed = Array.isArray(departments) ? departments : [];
+        const normalized = (parsed || []).map((d: any, idx: number) => ({
+          id:
+            d?.id ||
+            `${String(d?.name || "dept")
+              .trim()
+              .toLowerCase()
+              .replace(/\s+/g, "-")}-${idx}`,
+          name: String(d?.name || "").trim(),
+          manager: d?.manager || "",
+          employeeCount:
+            typeof d?.employeeCount === "number" ? d.employeeCount : 0,
+        }));
+        const deduped = Array.from(
+          new Map(
+            normalized.map((d: any) => [
+              String(d.name).trim().toLowerCase(),
+              d,
+            ]),
+          ).values(),
+        );
+        departments = deduped;
+      } catch (err) {
+        // keep departments as parsed
+      }
       const leaveRequests = JSON.parse(
         localStorage.getItem("leaveRequests") || "[]",
       );
       const attendanceRecords = JSON.parse(
         localStorage.getItem("attendanceRecords") || "[]",
       );
-      const systemAssets = JSON.parse(
+      let systemAssets = JSON.parse(
         localStorage.getItem("systemAssets") || "[]",
       );
-      const pcLaptopAssets = JSON.parse(
+      let pcLaptopAssets = JSON.parse(
         localStorage.getItem("pcLaptopAssets") || "[]",
       );
-      const itAccounts = JSON.parse(localStorage.getItem("itAccounts") || "[]");
-      const salaryRecords = JSON.parse(
+      let itAccounts = JSON.parse(localStorage.getItem("itAccounts") || "[]");
+      let salaryRecords = JSON.parse(
         localStorage.getItem("salaryRecords") || "[]",
       );
-      const pendingITNotifications = JSON.parse(
+      let pendingITNotifications = JSON.parse(
         localStorage.getItem("pendingITNotifications") || "[]",
       );
 
@@ -292,6 +317,35 @@ export default function MasterAdmin() {
         userRole: localStorage.getItem("userRole") || "",
         currentUser: localStorage.getItem("currentUser") || "",
       };
+
+      // Attempt to load server-backed data when available (Neon/Postgres)
+      try {
+        const headers = {
+          "Content-Type": "application/json",
+          "x-role": "admin",
+        } as const;
+        // Fetch assets from server (if DB connected)
+        const [assetsResp, itResp, empResp] = await Promise.allSettled([
+          fetch("/api/hr/assets", { headers }),
+          fetch("/api/hr/it-accounts", { headers }),
+          fetch("/api/hr/employees", { headers }),
+        ]);
+
+        if (assetsResp.status === "fulfilled" && assetsResp.value.ok) {
+          const j = await assetsResp.value.json().catch(() => null);
+          if (j?.items && Array.isArray(j.items)) systemAssets = j.items;
+        }
+        if (itResp.status === "fulfilled" && itResp.value.ok) {
+          const j = await itResp.value.json().catch(() => null);
+          if (j?.items && Array.isArray(j.items)) itAccounts = j.items;
+        }
+        if (empResp.status === "fulfilled" && empResp.value.ok) {
+          const j = await empResp.value.json().catch(() => null);
+          if (Array.isArray(j.items || j)) employees = j.items || j;
+        }
+      } catch (e) {
+        // ignore server fetch errors and fallback to localStorage
+      }
 
       setMasterData({
         adminUsers,
@@ -413,29 +467,156 @@ export default function MasterAdmin() {
       const pcs = masterData.pcLaptopAssets || [];
       const it = masterData.itAccounts || [];
       const notifs = masterData.pendingITNotifications || [];
+      const employees = masterData.employees || [];
+      const departments = masterData.departments || [];
+      const leaveRequests = masterData.leaveRequests || [];
+      const attendance = masterData.attendanceRecords || [];
+      const salaryRecords = masterData.salaryRecords || [];
 
-      const wsSys = XLSX.utils.json_to_sheet(sys);
-      XLSX.utils.book_append_sheet(wb, wsSys, "System_Assets");
+      // Helper: remove keys that are empty across all rows and mask sensitive fields
+      const filterEmptyAndMask = (rows: any[]) => {
+        if (!Array.isArray(rows) || rows.length === 0) return [];
+        const keys = Array.from(
+          rows.reduce((s, r) => {
+            Object.keys(r || {}).forEach((k) => s.add(k));
+            return s;
+          }, new Set<string>()),
+        );
 
-      const wsPcs = XLSX.utils.json_to_sheet(pcs);
-      XLSX.utils.book_append_sheet(wb, wsPcs, "PC_Laptops");
+        const keepKeys = keys.filter((k) => {
+          return rows.some((r) => {
+            const v = r?.[k];
+            if (v === null || v === undefined) return false;
+            if (typeof v === "string") return v.trim() !== "";
+            if (Array.isArray(v)) return v.length > 0;
+            if (typeof v === "object") return Object.keys(v).length > 0;
+            return true;
+          });
+        });
+
+        // mask sensitive fields
+        const sensitivePatterns = [/password/i, /secret/i, /metadata/i];
+
+        return rows.map((r) => {
+          const out: any = {};
+          for (const k of keepKeys) {
+            let val = r?.[k];
+            if (val === undefined) val = "";
+            // mask if key matches sensitive patterns
+            if (sensitivePatterns.some((p) => p.test(k))) {
+              if (
+                val === null ||
+                val === undefined ||
+                String(val).trim() === ""
+              )
+                out[k] = "";
+              else out[k] = "••••••";
+              continue;
+            }
+            // for nested objects/arrays, stringify for Excel readability
+            if (Array.isArray(val) || typeof val === "object") {
+              try {
+                out[k] = JSON.stringify(val);
+              } catch (e) {
+                out[k] = String(val);
+              }
+            } else {
+              out[k] = val;
+            }
+          }
+          return out;
+        });
+      };
+
+      // Helper to safely append sheet with limited name length and filtered columns
+      const appendSheet = (name: string, data: any[]) => {
+        const safeName = name.substring(0, 31);
+        const filtered = filterEmptyAndMask(data || []);
+        const ws = XLSX.utils.json_to_sheet(filtered);
+        XLSX.utils.book_append_sheet(wb, ws, safeName);
+      };
+
+      // Core sheets
+      appendSheet("Employees", employees);
+      appendSheet("Departments", departments);
+      appendSheet("LeaveRequests", leaveRequests);
+      appendSheet("Attendance", attendance);
+      appendSheet("SalaryRecords", salaryRecords);
+
+      // Sanitize system assets (remove raw password/metadata) but filter empty cols
+      const sanitizedSys = (sys || []).map((s: any) => {
+        const { vonagePassword, vitelPassword, password, metadata, ...rest } =
+          s || {};
+        return rest;
+      });
+      appendSheet("System_Assets", sanitizedSys);
+      appendSheet("PC_Laptops", pcs);
 
       const itFlat = it.map((r) => ({
-        ...r,
+        id: r.id,
+        employeeId: r.employeeId,
+        employeeName: r.employeeName,
+        systemId: r.systemId,
+        department: r.department,
+        tableNumber: r.tableNumber,
+        vitelProvider: r.vitelGlobal?.provider,
+        vitelId: r.vitelGlobal?.id,
+        lmPlayerId: r.lmPlayer?.id,
+        lmLicense: r.lmPlayer?.license,
         emails: Array.isArray(r.emails)
           ? r.emails.map((e: any) => `${e.provider}:${e.email}`).join("; ")
           : "",
+        createdAt: r.createdAt,
       }));
-      const wsIT = XLSX.utils.json_to_sheet(itFlat);
-      XLSX.utils.book_append_sheet(wb, wsIT, "IT_Accounts");
+      appendSheet("IT_Accounts", itFlat);
+      appendSheet("IT_Notifications", notifs);
 
-      const wsNotif = XLSX.utils.json_to_sheet(notifs);
-      XLSX.utils.book_append_sheet(wb, wsNotif, "IT_Notifications");
+      // Append category-specific sheets based on systemAssets categories
+      const categories = Array.from(
+        new Set(sanitizedSys.map((s: any) => (s.category || "").toString())),
+      ).filter(Boolean);
 
-      XLSX.writeFile(
-        wb,
-        `it-data-${new Date().toISOString().split("T")[0]}.xlsx`,
-      );
+      for (const cat of categories) {
+        const rows = sanitizedSys.filter(
+          (s: any) => String(s.category) === String(cat),
+        );
+        // Normalize keys for better Excel readability
+        const normalized = rows.map((r: any) => ({
+          id: r.id,
+          category: r.category,
+          vendor: r.vendorName,
+          company: r.companyName || "",
+          serialNumber: r.serialNumber || r.serial || "",
+          purchaseDate: r.purchaseDate,
+          warrantyEndDate: r.warrantyEndDate,
+          number: r.vonageNumber || r.vitelNumber || r.number || "",
+          extCode: r.vonageExtCode || r.vitelExtCode || r.ext_code || "",
+          // omit password and metadata from category sheets for privacy
+          createdAt: r.createdAt,
+        }));
+        // Sheet name as Category_<name>
+        const sheetName = `Category_${String(cat)}`.substring(0, 31);
+        appendSheet(sheetName, normalized);
+      }
+
+      // Also include a flattened view of PC/Laptops with resolved asset names
+      const pcFlattened = (pcs || []).map((p: any) => ({
+        id: p.id,
+        mouse: getAssetDetails(p.mouseId || ""),
+        keyboard: getAssetDetails(p.keyboardId || ""),
+        motherboard: getAssetDetails(p.motherboardId || ""),
+        camera: getAssetDetails(p.cameraId || ""),
+        headphone: getAssetDetails(p.headphoneId || ""),
+        powerSupply: getAssetDetails(p.powerSupplyId || ""),
+        storage: getAssetDetails(p.storageId || ""),
+        ram1: getAssetDetails(p.ramId || ""),
+        ram2: getAssetDetails(p.ramId2 || ""),
+        createdAt: p.createdAt,
+      }));
+      appendSheet("PC_Laptops_Flat", pcFlattened);
+
+      const fileName = `master-data-${new Date().toISOString().split("T")[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
     } catch (error) {
       console.error("Excel export error:", error);
       alert("Error exporting to Excel. Please try again.");
@@ -533,25 +714,6 @@ export default function MasterAdmin() {
                 )}
               </>
             )}
-            <Button
-              onClick={() => {
-                setDbOpen(true);
-                setDbUnlocked(false);
-                setDbPassword("");
-              }}
-              variant="outline"
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
-            >
-              <Database className="h-4 w-4 mr-2" />
-              Database
-            </Button>
-            <Button
-              onClick={loadAllData}
-              className="bg-slate-600 hover:bg-slate-700 text-white flex items-center gap-2"
-            >
-              <Database className="h-4 w-4" />
-              Refresh Data
-            </Button>
             <Button
               onClick={clearEmployeesAndITDemo}
               variant="destructive"
@@ -801,6 +963,66 @@ export default function MasterAdmin() {
                   className="text-xs whitespace-nowrap data-[state=active]:bg-blue-500 data-[state=active]:text-white rounded-md px-3 py-1"
                 >
                   IT Notifications
+                </TabsTrigger>
+                <TabsTrigger
+                  value="mouse"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  Mouse
+                </TabsTrigger>
+                <TabsTrigger
+                  value="keyboard"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  Keyboard
+                </TabsTrigger>
+                <TabsTrigger
+                  value="motherboard"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  Motherboard
+                </TabsTrigger>
+                <TabsTrigger
+                  value="ram"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=state=active]:text-white rounded-md px-3 py-1"
+                >
+                  RAM
+                </TabsTrigger>
+                <TabsTrigger
+                  value="storage"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  Storage
+                </TabsTrigger>
+                <TabsTrigger
+                  value="power-supply"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  Power Supply
+                </TabsTrigger>
+                <TabsTrigger
+                  value="headphone"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  Headphone
+                </TabsTrigger>
+                <TabsTrigger
+                  value="camera"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  Camera
+                </TabsTrigger>
+                <TabsTrigger
+                  value="monitor"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  Monitor
+                </TabsTrigger>
+                <TabsTrigger
+                  value="vonage"
+                  className="text-xs whitespace-nowrap data-[state=active]:bg-indigo-500 data-[state=active]:text-white rounded-md px-3 py-1"
+                >
+                  Vonage
                 </TabsTrigger>
               </TabsList>
 

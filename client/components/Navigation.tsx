@@ -26,7 +26,6 @@ import {
   LayoutDashboard,
   Database,
   RefreshCw,
-  CloudUpload,
   ServerCog,
 } from "lucide-react";
 
@@ -104,37 +103,100 @@ export default function AppNav() {
     return () => clearInterval(id);
   }, []);
 
+  // safeFetch: wraps fetch and returns an object similar to Response but never throws
+  async function safeFetch(url: string, opts?: RequestInit) {
+    try {
+      const res = await fetch(url, opts);
+      return res;
+    } catch (err) {
+      // Return a fallback object that mimics the Response interface used below
+      return {
+        ok: false,
+        status: 0,
+        json: async () => null,
+        text: async () => "",
+      } as unknown as Response;
+    }
+  }
+
+  // Pull data from server periodically when DB is online
+  const pullFromServer = async () => {
+    if (dbStatus !== "online") return;
+    try {
+      const headers = {
+        "Content-Type": "application/json",
+        "x-role": "admin",
+      } as const;
+      // Fetch assets, it accounts, employees, pc laptops using safeFetch to avoid throwing
+      const [assetsR, itR, empR, pcR] = await Promise.all([
+        safeFetch("/api/hr/assets", { headers }),
+        safeFetch("/api/hr/it-accounts", { headers }),
+        safeFetch("/api/hr/employees", { headers }),
+        safeFetch("/api/hr/pc-laptops", { headers }),
+      ]);
+
+      if (assetsR && (assetsR as any).ok) {
+        const j = await (assetsR as Response).json().catch(() => null);
+        if (j?.items)
+          localStorage.setItem("systemAssets", JSON.stringify(j.items));
+      }
+      if (itR && (itR as any).ok) {
+        const j = await (itR as Response).json().catch(() => null);
+        if (j?.items)
+          localStorage.setItem("itAccounts", JSON.stringify(j.items));
+      }
+      if (empR && (empR as any).ok) {
+        const j = await (empR as Response).json().catch(() => null);
+        if (j?.items)
+          localStorage.setItem("hrEmployees", JSON.stringify(j.items));
+      }
+      if (pcR && (pcR as any).ok) {
+        const j = await (pcR as Response).json().catch(() => null);
+        if (j?.items)
+          localStorage.setItem("pcLaptopAssets", JSON.stringify(j.items));
+      }
+      setLastSync(new Date().toLocaleTimeString());
+    } catch (e) {
+      console.debug("Pull from server failed", e);
+    }
+  };
+
+  useEffect(() => {
+    // pull immediately when DB becomes online
+    if (dbStatus === "online") pullFromServer();
+    const id = setInterval(pullFromServer, 60 * 1000);
+    return () => clearInterval(id);
+  }, [dbStatus]);
+
   // DB health check
   useEffect(() => {
     let cancelled = false;
-    const check = () => {
+    const check = async () => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5000);
       const url = `${window.location.origin}/api/db/health`;
-      fetch(url, { signal: controller.signal })
-        .then((r) => {
-          clearTimeout(timeout);
-          if (!r.ok) {
-            return r
-              .text()
-              .catch(() => "")
-              .then((text) => {
-                if (!cancelled) setDbStatus("offline");
-                console.debug("DB health check non-ok", r.status, text);
-              });
-          }
-          return r
-            .json()
-            .catch(() => null)
-            .then((j) => {
-              if (!cancelled) setDbStatus(j?.connected ? "online" : "offline");
-            });
-        })
-        .catch((err) => {
-          clearTimeout(timeout);
+      try {
+        const r = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (!r.ok) {
+          const text = await r.text().catch(() => "");
           if (!cancelled) setDbStatus("offline");
-          console.debug("DB health check failed (caught)", err?.message || err);
-        });
+          console.debug("DB health check non-ok", r.status, text);
+          return;
+        }
+        const j = await r.json().catch(() => null);
+        if (!cancelled) setDbStatus(j?.connected ? "online" : "offline");
+      } catch (err: any) {
+        clearTimeout(timeout);
+        // Silence AbortError - it's expected when request times out
+        if (err && err.name === "AbortError") {
+          // don't set offline repeatedly for aborts; just debug
+          console.debug("DB health check aborted (timeout)");
+          return;
+        }
+        if (!cancelled) setDbStatus("offline");
+        console.debug("DB health check failed (caught)", err?.message || err);
+      }
     };
     try {
       check();
@@ -274,15 +336,6 @@ export default function AppNav() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={handleViewUsers}
-                      className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-300"
-                    >
-                      <Users className="h-4 w-4 mr-2" />
-                      View Users
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
                       onClick={handleMainDashboard}
                       className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-300"
                     >
@@ -307,48 +360,20 @@ export default function AppNav() {
                       <Database className="h-4 w-4 mr-2" />
                       Master Admin
                     </Button>
-                    <div
-                      className="hidden md:flex items-center px-2 py-1 rounded-md border border-slate-600 text-xs text-slate-300"
-                      title={
-                        dbStatus === "online"
-                          ? "Database connected"
-                          : dbStatus === "offline"
-                            ? "Database offline"
-                            : "Checking database"
-                      }
-                    >
-                      <span
-                        className={`inline-block h-2 w-2 rounded-full mr-2 ${dbStatus === "online" ? "bg-green-500" : dbStatus === "offline" ? "bg-red-500" : "bg-yellow-500"}`}
-                      />
-                      {dbStatus === "online"
-                        ? "DB Connected"
-                        : dbStatus === "offline"
-                          ? "DB Offline"
-                          : "DB Checking"}
-                    </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={syncAll}
                       disabled={syncing}
                       title={lastSync ? `Last sync: ${lastSync}` : "Sync to DB"}
-                      className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-300"
+                      className={`transition-all duration-300 ${dbStatus === "online" ? "border-green-500 text-green-300 hover:bg-green-700 hover:text-white" : dbStatus === "offline" ? "border-red-500 text-red-300 hover:bg-red-700 hover:text-white" : "border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white"}`}
                     >
                       <RefreshCw
                         className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`}
                       />
                       {syncing ? "Syncing" : "Sync"}
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate("/deploy")}
-                      className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-300"
-                      title="Deploy & Database"
-                    >
-                      <CloudUpload className="h-4 w-4 mr-2" />
-                      Deploy
-                    </Button>
+
                     <Button
                       variant="outline"
                       size="sm"
@@ -359,38 +384,6 @@ export default function AppNav() {
                       <Database className="h-4 w-4 mr-2" />
                       Database
                     </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-300"
-                          title="Admin tools"
-                        >
-                          <ServerCog className="h-4 w-4 mr-2" />
-                          Admin
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        className="bg-slate-800 border-slate-700 text-white"
-                        align="end"
-                      >
-                        <DropdownMenuItem
-                          className="focus:bg-slate-700 cursor-pointer"
-                          onClick={dbHealth}
-                        >
-                          <ServerCog className="h-4 w-4 mr-2" />
-                          DB Health Check
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="focus:bg-slate-700 cursor-pointer"
-                          onClick={dbBackfill}
-                        >
-                          <ServerCog className="h-4 w-4 mr-2" />
-                          DB Backfill Categories
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
                   </>
                 )}
 
@@ -410,6 +403,13 @@ export default function AppNav() {
                     className="bg-slate-800 border-slate-700 text-white"
                     align="end"
                   >
+                    <DropdownMenuItem
+                      className="focus:bg-slate-700 cursor-pointer"
+                      onClick={handleViewUsers}
+                    >
+                      <Users className="h-4 w-4 mr-2" />
+                      View Users
+                    </DropdownMenuItem>
                     <DropdownMenuItem className="focus:bg-slate-700 cursor-pointer">
                       <User className="h-4 w-4 mr-2" />
                       Profile

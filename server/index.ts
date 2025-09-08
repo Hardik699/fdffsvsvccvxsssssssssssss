@@ -10,6 +10,7 @@ import {
   syncMasterDataToGoogleSheets,
   getHRSpreadsheetInfo,
   syncHRDataToGoogleSheets,
+  syncMasterDataFromDb,
 } from "./services/googleSheets";
 
 const HAS_DB = !!(
@@ -156,10 +157,72 @@ export function createServer() {
   // Google Sheets integration (admin only recommended on client)
   app.post("/api/google-sheets/sync-master-data", syncMasterDataToGoogleSheets);
   app.get("/api/google-sheets/info", getSpreadsheetInfo);
+  // Admin route: sync directly from Postgres DB into Google Sheets
+  app.post("/api/google-sheets/sync-master-data-from-db", requireAdmin, syncMasterDataFromDb);
 
   // HR Google Sheets (separate spreadsheet)
   app.post("/api/google-sheets/sync-hr", syncHRDataToGoogleSheets);
   app.get("/api/google-sheets/info-hr", getHRSpreadsheetInfo);
+
+  // Admin: full wipe of data (DB tables, file-store, uploads)
+  app.post("/api/admin/full-wipe", requireAdmin, async (_req, res) => {
+    try {
+      // Clear file-store salaries.json
+      const fs = await import("fs/promises");
+      const dataPath = path.resolve(process.cwd(), "data", "salaries.json");
+      await fs.writeFile(dataPath, JSON.stringify({ salaries: [], documents: [] }, null, 2), "utf8");
+
+      // Clear uploads directory
+      const uploadsDir = path.resolve(process.cwd(), "uploads");
+      await fs.rm(uploadsDir, { recursive: true, force: true });
+      await fs.mkdir(uploadsDir, { recursive: true });
+
+      // Truncate DB tables if available
+      if (HAS_DB) {
+        const { pool } = await import("./data/postgres");
+        const tables = [
+          "asset_assignments",
+          "it_accounts",
+          "employees",
+          "system_assets",
+          "mice",
+          "keyboards",
+          "motherboards",
+          "rams",
+          "storages",
+          "power_supplies",
+          "headphones",
+          "cameras",
+          "monitors",
+          "vonage_numbers",
+          "vitel_global_numbers",
+          "pc_laptop_assets",
+          "salary_documents",
+          "salaries",
+        ];
+        await pool.query("BEGIN");
+        for (const t of tables) {
+          // skip non-existing tables
+          const r = await pool.query("SELECT to_regclass($1) AS reg", [t]);
+          if (r.rows?.[0]?.reg) {
+            await pool.query(`TRUNCATE TABLE ${t} RESTART IDENTITY CASCADE`);
+          }
+        }
+        await pool.query("COMMIT");
+      }
+
+      res.json({ ok: true });
+    } catch (e: any) {
+      try {
+        // best effort rollback DB if pool exists
+        if (HAS_DB) {
+          const { pool } = await import("./data/postgres");
+          await pool.query("ROLLBACK").catch(() => {});
+        }
+      } catch {}
+      res.status(500).json({ ok: false, error: e?.message || String(e) });
+    }
+  });
 
   return app;
 }

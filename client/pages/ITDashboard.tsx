@@ -18,6 +18,7 @@ import {
   SheetTitle,
   SheetTrigger,
   SheetFooter,
+  SheetClose,
 } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -113,10 +114,23 @@ export default function ITDashboard() {
   const [previewSecrets, setPreviewSecrets] = useState(false);
   const [previewFull, setPreviewFull] = useState(false);
 
+  // Controlled sheet for creating IT records (so notifications can open it)
+  const [showCreateITSheet, setShowCreateITSheet] = useState(false);
+  // When true (opened from a notification) certain fields are fixed and cannot be edited
+  const [lockPrefill, setLockPrefill] = useState(false);
+
   // Create IT record (inline) state
   type NewEmailRow = {
-    provider: "CUSTOM";
+    provider:
+      | "CUSTOM"
+      | "NSIT"
+      | "LP"
+      | "MS"
+      | "ORWIN"
+      | "VITEL_GLOBAL"
+      | "VONAGE";
     providerCustom?: string;
+    providerId?: string;
     email: string;
     password: string;
   };
@@ -130,7 +144,13 @@ export default function ITDashboard() {
   const [newLmId, setNewLmId] = useState("");
   const [newLmPassword, setNewLmPassword] = useState("");
   const [newEmails, setNewEmails] = useState<NewEmailRow[]>([
-    { provider: "CUSTOM", providerCustom: "", email: "", password: "" },
+    {
+      provider: "CUSTOM",
+      providerCustom: "",
+      providerId: "",
+      email: "",
+      password: "",
+    },
   ]);
   const [showPw, setShowPw] = useState(false);
   const [newNotes, setNewNotes] = useState("");
@@ -166,6 +186,22 @@ export default function ITDashboard() {
     if (!ids.includes(newProviderId)) setNewProviderId("");
   }, [newProvider]);
 
+  function getProviderIds(provider: string) {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const assets = raw ? (JSON.parse(raw) as any[]) : [];
+    if (provider === "VITEL_GLOBAL") {
+      return assets
+        .filter((a: any) => a.category === "vitel-global")
+        .map((a: any) => a.id);
+    }
+    if (provider === "VONAGE") {
+      return assets
+        .filter((a: any) => a.category === "vonage")
+        .map((a: any) => a.vonageExtCode || a.vonageNumber || a.id);
+    }
+    return [];
+  }
+
   // when employee selected, prefill department and table
   useEffect(() => {
     const emp = employees.find((e) => e.id === newEmpId) || null;
@@ -187,7 +223,30 @@ export default function ITDashboard() {
     const pending = localStorage.getItem("pendingITNotifications");
     if (its) setRecords(JSON.parse(its));
     if (emps) setEmployees(JSON.parse(emps));
-    if (depts) setDepartments(JSON.parse(depts));
+    if (depts) {
+      try {
+        const parsed = JSON.parse(depts) || [];
+        const normalized = (Array.isArray(parsed) ? parsed : []).map(
+          (d: any, idx: number) => ({
+            id:
+              d?.id ||
+              `${String(d?.name || "dept")
+                .trim()
+                .toLowerCase()
+                .replace(/\s+/g, "-")}-${idx}`,
+            name: String(d?.name || "").trim(),
+          }),
+        );
+        const dedupedMap = new Map<string, any>();
+        normalized.forEach((d: any) => {
+          const key = String(d.name).trim().toLowerCase();
+          if (!dedupedMap.has(key)) dedupedMap.set(key, d);
+        });
+        setDepartments(Array.from(dedupedMap.values()));
+      } catch (err) {
+        setDepartments(JSON.parse(depts));
+      }
+    }
     if (pending) {
       const notifications = JSON.parse(pending);
       // Only show unprocessed notifications
@@ -196,6 +255,19 @@ export default function ITDashboard() {
       );
     }
   }, []);
+
+  const handleRemoveIT = (id: string) => {
+    if (!confirm("Remove this IT account?")) return;
+    const next = records.filter((rec) => rec.id !== id);
+    setRecords(next);
+    localStorage.setItem("itAccounts", JSON.stringify(next));
+    // Attempt to delete from server so periodic pulls don't restore it
+    fetch(`/api/hr/it-accounts/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", "x-role": "admin" },
+    }).catch(() => {});
+    alert("IT account removed");
+  };
 
   const handleProcessEmployee = (_notification: PendingITNotification) => {
     alert("IT has been notified. Credential form is disabled in this build.");
@@ -265,6 +337,99 @@ export default function ITDashboard() {
     setShowPw(false);
     setNewNotes("");
     alert("IT record created");
+  };
+
+  const handleEditIT = (rec: ITRecord) => {
+    // Determine employee id in case records were stored differently — prefer matching by id, fall back to name
+    let targetEmpId = "";
+    if (rec.employeeId) {
+      const found = employees.find((e) => e.id === rec.employeeId);
+      if (found) targetEmpId = found.id;
+    }
+    if (!targetEmpId && rec.employeeName) {
+      const foundByName = employees.find(
+        (e) => e.fullName === rec.employeeName,
+      );
+      if (foundByName) targetEmpId = foundByName.id;
+    }
+
+    setNewEmpId(targetEmpId || "");
+    setNewDepartment(rec.department || "");
+    setNewTableNumber(rec.tableNumber || "");
+    setNewSystemId(rec.systemId || "");
+
+    // Ensure the current record's systemId is present in the availableSystemIds
+    try {
+      const pcRaw = localStorage.getItem("pcLaptopAssets");
+      const pcIds = pcRaw ? (JSON.parse(pcRaw) as any[]).map((x) => x.id) : [];
+      const itRaw = localStorage.getItem("itAccounts");
+      const used = itRaw
+        ? (JSON.parse(itRaw) as any[]).map((x: any) => x.systemId)
+        : [];
+      const combined = pcIds.filter(
+        (id: string) => !used.includes(id) || id === rec.systemId,
+      );
+      // If the current systemId is not part of pcIds, still include it so the select can display it
+      if (rec.systemId && !combined.includes(rec.systemId))
+        combined.unshift(rec.systemId);
+      setAvailableSystemIds(combined);
+    } catch (err) {
+      // fallback: keep existing availableSystemIds
+    }
+
+    const provider =
+      (rec as any).vitelGlobal?.provider === "vonage" ? "vonage" : "vitel";
+    setNewProvider(provider);
+
+    // Populate provider IDs immediately from local storage so the provider ID select has values
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const assets = raw ? (JSON.parse(raw) as any[]) : [];
+      const ids = assets
+        .filter((a: any) =>
+          provider === "vonage"
+            ? a.category === "vonage"
+            : a.category === "vitel" || a.category === "vitel-global",
+        )
+        .map((a: any) =>
+          provider === "vonage"
+            ? a.vonageExtCode || a.vonageNumber || a.id
+            : a.id,
+        )
+        .filter((x: any) => typeof x === "string" && x.trim());
+      setNewProviderIds(ids);
+    } catch (err) {
+      setNewProviderIds([]);
+    }
+
+    setNewProviderId(rec.vitelGlobal?.id || "");
+    setNewLmId(rec.lmPlayer?.id || "");
+    setNewLmPassword(rec.lmPlayer?.password || "");
+
+    setNewEmails(
+      (rec.emails && rec.emails.length
+        ? rec.emails.map((e) => ({
+            provider: "CUSTOM",
+            providerCustom: "",
+            providerId: "",
+            email: e.email || "",
+            password: e.password || "",
+          }))
+        : [
+            {
+              provider: "CUSTOM",
+              providerCustom: "",
+              providerId: "",
+              email: "",
+              password: "",
+            },
+          ]) as NewEmailRow[],
+    );
+
+    setNewNotes(rec.notes || "");
+    setShowPw(false);
+    setLockPrefill(false);
+    setShowCreateITSheet(true);
   };
 
   const stats = useMemo(() => {
@@ -349,12 +514,33 @@ export default function ITDashboard() {
                             <span className="font-medium text-white">
                               {notification.employeeName}
                             </span>
-                            <Badge
-                              variant="secondary"
-                              className="bg-orange-500/20 text-orange-400 text-xs"
-                            >
-                              New
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant="secondary"
+                                className="bg-orange-500/20 text-orange-400 text-xs"
+                              >
+                                New
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  // Prefill Create IT form and open it
+                                  setNewEmpId(notification.employeeId);
+                                  setNewDepartment(
+                                    notification.department || "",
+                                  );
+                                  setNewTableNumber(
+                                    notification.tableNumber || "",
+                                  );
+                                  setLockPrefill(true);
+                                  setShowCreateITSheet(true);
+                                }}
+                                className="text-xs"
+                              >
+                                Process
+                              </Button>
+                            </div>
                           </div>
                           <div className="text-xs text-slate-400">
                             {notification.department} • Table{" "}
@@ -373,9 +559,21 @@ export default function ITDashboard() {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-            <Sheet>
+            <Sheet
+              open={showCreateITSheet}
+              onOpenChange={(o) => {
+                setShowCreateITSheet(!!o);
+                if (!o) setLockPrefill(false);
+              }}
+            >
               <SheetTrigger asChild>
-                <Button className="bg-blue-500 hover:bg-blue-600 text-white">
+                <Button
+                  onClick={() => {
+                    setShowCreateITSheet(true);
+                    setLockPrefill(false);
+                  }}
+                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                >
                   Add IT Data
                 </Button>
               </SheetTrigger>
@@ -395,7 +593,11 @@ export default function ITDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label className="text-slate-300">Employee Name</Label>
-                      <Select value={newEmpId} onValueChange={setNewEmpId}>
+                      <Select
+                        value={newEmpId}
+                        onValueChange={setNewEmpId}
+                        disabled={lockPrefill}
+                      >
                         <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
                           <SelectValue placeholder="Select employee" />
                         </SelectTrigger>
@@ -443,13 +645,17 @@ export default function ITDashboard() {
                       <Select
                         value={newDepartment}
                         onValueChange={setNewDepartment}
+                        disabled={lockPrefill}
                       >
                         <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
                           <SelectValue placeholder="Select department" />
                         </SelectTrigger>
                         <SelectContent className="bg-slate-800 border-slate-700 text-white max-h-64">
-                          {departments.map((d) => (
-                            <SelectItem key={d.id} value={d.name}>
+                          {departments.map((d, i) => (
+                            <SelectItem
+                              key={`${d.id || d.name}-${i}`}
+                              value={d.name}
+                            >
                               {d.name}
                             </SelectItem>
                           ))}
@@ -461,6 +667,7 @@ export default function ITDashboard() {
                       <Select
                         value={newTableNumber}
                         onValueChange={setNewTableNumber}
+                        disabled={lockPrefill}
                       >
                         <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
                           <SelectValue placeholder="Select table (1-32)" />
@@ -523,31 +730,82 @@ export default function ITDashboard() {
                           <div className="space-y-2">
                             <Select
                               value={row.provider}
-                              onValueChange={() => {
-                                /* only CUSTOM supported */
-                              }}
-                            >
-                              <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
-                                <SelectValue> CUSTOM </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent className="bg-slate-800 border-slate-700 text-white">
-                                <SelectItem value="CUSTOM">CUSTOM</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Input
-                              placeholder="Custom provider"
-                              value={row.providerCustom || ""}
-                              onChange={(e) =>
+                              onValueChange={(v) => {
                                 setNewEmails((r) =>
                                   r.map((x, i) =>
                                     i === idx
-                                      ? { ...x, providerCustom: e.target.value }
+                                      ? {
+                                          ...x,
+                                          provider: v as any,
+                                          providerId: "",
+                                        }
                                       : x,
                                   ),
-                                )
-                              }
-                              className="bg-slate-800/50 border-slate-700 text-white"
-                            />
+                                );
+                              }}
+                            >
+                              <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
+                                <SelectValue placeholder="Provider" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                                <SelectItem value="CUSTOM">CUSTOM</SelectItem>
+                                <SelectItem value="NSIT">NSIT</SelectItem>
+                                <SelectItem value="LP">LP</SelectItem>
+                                <SelectItem value="MS">MS TEMS</SelectItem>
+                                <SelectItem value="ORWIN">ORWIN</SelectItem>
+                              </SelectContent>
+                            </Select>
+
+                            {row.provider === "CUSTOM" ? (
+                              <Input
+                                placeholder="Custom provider"
+                                value={row.providerCustom || ""}
+                                onChange={(e) =>
+                                  setNewEmails((r) =>
+                                    r.map((x, i) =>
+                                      i === idx
+                                        ? {
+                                            ...x,
+                                            providerCustom: e.target.value,
+                                          }
+                                        : x,
+                                    ),
+                                  )
+                                }
+                                className="bg-slate-800/50 border-slate-700 text-white"
+                              />
+                            ) : null}
+
+                            {(row.provider === "VITEL_GLOBAL" ||
+                              row.provider === "VONAGE") && (
+                              <Select
+                                value={row.providerId || ""}
+                                onValueChange={(v) =>
+                                  setNewEmails((r) =>
+                                    r.map((x, i) =>
+                                      i === idx ? { ...x, providerId: v } : x,
+                                    ),
+                                  )
+                                }
+                              >
+                                <SelectTrigger className="bg-slate-800/50 border-slate-700 text-white">
+                                  <SelectValue placeholder="Select ID" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-800 border-slate-700 text-white max-h-64">
+                                  {getProviderIds(row.provider).length === 0 ? (
+                                    <div className="px-3 py-2 text-slate-400">
+                                      No IDs available
+                                    </div>
+                                  ) : (
+                                    getProviderIds(row.provider).map((id) => (
+                                      <SelectItem key={id} value={id}>
+                                        {id}
+                                      </SelectItem>
+                                    ))
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            )}
                           </div>
                           <Input
                             placeholder="email@example.com"
@@ -873,8 +1131,8 @@ export default function ITDashboard() {
                   </SelectTrigger>
                   <SelectContent className="bg-slate-800 border-slate-700 text-white">
                     <SelectItem value="all">All Departments</SelectItem>
-                    {departments.map((d) => (
-                      <SelectItem key={d.id} value={d.name}>
+                    {departments.map((d, i) => (
+                      <SelectItem key={`${d.id || d.name}-${i}`} value={d.name}>
                         {d.name}
                       </SelectItem>
                     ))}
@@ -942,38 +1200,52 @@ export default function ITDashboard() {
                           </SheetTrigger>
                           <SheetContent
                             side="right"
-                            className="bg-slate-900 border-slate-700 text-white w-screen max-w-none h-screen overflow-y-auto"
+                            className="bg-slate-900 border-slate-700 text-white w-full max-w-md h-full max-h-screen overflow-y-auto p-6"
                           >
                             <SheetHeader>
                               <SheetTitle className="text-white">
                                 IT Account Preview
                               </SheetTitle>
                             </SheetHeader>
-                            <div className="mt-3 flex items-center justify-end gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-slate-600 text-slate-300"
-                                onClick={() => setPreviewFull((v) => !v)}
-                              >
-                                {previewFull
-                                  ? "Hide Details"
-                                  : "View Full Details"}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="border-slate-600 text-slate-300"
-                                onClick={() =>
-                                  previewSecrets
-                                    ? setPreviewSecrets(false)
-                                    : requirePreviewPasscode()
-                                }
-                              >
-                                {previewSecrets
-                                  ? "Hide Passwords"
-                                  : "Show Passwords"}
-                              </Button>
+                            <div className="mt-3 flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-slate-600 text-slate-300"
+                                  onClick={() => setPreviewFull((v) => !v)}
+                                >
+                                  {previewFull
+                                    ? "Hide Details"
+                                    : "View Full Details"}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-slate-600 text-slate-300"
+                                  onClick={() =>
+                                    previewSecrets
+                                      ? setPreviewSecrets(false)
+                                      : requirePreviewPasscode()
+                                  }
+                                >
+                                  {previewSecrets
+                                    ? "Hide Passwords"
+                                    : "Show Passwords"}
+                                </Button>
+                              </div>
+
+                              {/* Remove IT account button (closes sheet via SheetClose) */}
+                              <SheetClose asChild>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  className="border-slate-600 text-white"
+                                  onClick={() => handleRemoveIT(r.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-1" /> Remove
+                                </Button>
+                              </SheetClose>
                             </div>
                             <div className="mt-4 space-y-4 text-sm text-slate-300">
                               {(() => {
@@ -988,7 +1260,7 @@ export default function ITDashboard() {
                                   .join("");
                                 return (
                                   <div className="flex items-center gap-4">
-                                    <Avatar className="h-14 w-14">
+                                    <Avatar className="h-16 w-16">
                                       <AvatarImage
                                         src={
                                           (emp && emp.photo) ||
@@ -1081,29 +1353,31 @@ export default function ITDashboard() {
                                       (e: any, i: number) => (
                                         <div
                                           key={i}
-                                          className="p-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs"
+                                          className="p-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs items-start"
                                         >
-                                          <div>
+                                          <div className="break-words min-w-0">
                                             <div className="text-slate-500">
                                               Provider
                                             </div>
-                                            <div>
+                                            <div className="break-words whitespace-normal text-sm">
                                               {e.providerCustom ||
                                                 e.provider ||
                                                 "-"}
                                             </div>
                                           </div>
-                                          <div>
+                                          <div className="break-words min-w-0">
                                             <div className="text-slate-500">
                                               Email
                                             </div>
-                                            <div>{e.email || "-"}</div>
+                                            <div className="break-words whitespace-normal text-sm">
+                                              {e.email || "-"}
+                                            </div>
                                           </div>
-                                          <div>
+                                          <div className="break-words min-w-0">
                                             <div className="text-slate-500">
                                               Password
                                             </div>
-                                            <div>
+                                            <div className="break-words whitespace-normal text-sm">
                                               {e.password
                                                 ? previewSecrets
                                                   ? e.password
@@ -1130,12 +1404,21 @@ export default function ITDashboard() {
                                   ? JSON.parse(assetsRaw)
                                   : [];
                                 let providerAsset: any = null;
+                                const findCategoryMatch = (
+                                  a: any,
+                                  keywords: string[],
+                                ) => {
+                                  const cat = String(
+                                    a?.category || "",
+                                  ).toLowerCase();
+                                  return keywords.some((k) => cat.includes(k));
+                                };
                                 if (
                                   (r as any).vitelGlobal?.provider === "vonage"
                                 ) {
                                   providerAsset = assets.find(
                                     (a: any) =>
-                                      a.category === "vonage" &&
+                                      findCategoryMatch(a, ["vonage"]) &&
                                       (a.id === r.vitelGlobal?.id ||
                                         a.vonageExtCode === r.vitelGlobal?.id ||
                                         a.vonageNumber === r.vitelGlobal?.id),
@@ -1143,45 +1426,64 @@ export default function ITDashboard() {
                                 } else {
                                   providerAsset = assets.find(
                                     (a: any) =>
-                                      (a.category === "vitel" ||
-                                        a.category === "vitel-global") &&
-                                      a.id === r.vitelGlobal?.id,
+                                      findCategoryMatch(a, [
+                                        "vitel",
+                                        "vitel-global",
+                                        "vitel global",
+                                      ]) && a.id === r.vitelGlobal?.id,
                                   );
                                 }
+                                // compute fallbacks for provider details
+                                const displayCategory =
+                                  providerAsset?.category ||
+                                  (r as any).vitelGlobal?.provider ||
+                                  "-";
+                                const displayId =
+                                  r.vitelGlobal?.id || providerAsset?.id || "-";
+                                const displayVendor =
+                                  providerAsset?.vendorName ||
+                                  providerAsset?.vendor ||
+                                  "-";
+                                const displayCompany =
+                                  providerAsset?.companyName ||
+                                  providerAsset?.company ||
+                                  "-";
+                                const displayExt =
+                                  providerAsset?.vonageExtCode ||
+                                  providerAsset?.vitelExtCode ||
+                                  providerAsset?.ext_code ||
+                                  (r as any).vitelGlobal?.extNumber ||
+                                  "-";
+                                const displayNumber =
+                                  providerAsset?.vonageNumber ||
+                                  providerAsset?.vitelNumber ||
+                                  providerAsset?.number ||
+                                  (r as any).vitelGlobal?.id ||
+                                  "-";
+                                const displayPassword =
+                                  providerAsset?.vonagePassword ||
+                                  providerAsset?.vitelPassword ||
+                                  providerAsset?.password ||
+                                  (r as any).vitelGlobal?.password ||
+                                  "-";
+
                                 return (
                                   <div className="rounded border border-slate-700 bg-slate-800/30 p-3">
                                     <div className="font-medium text-white mb-2">
                                       Provider Details
                                     </div>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-                                      <div>
-                                        Category:{" "}
-                                        {providerAsset?.category ||
-                                          (r as any).vitelGlobal?.provider ||
-                                          "-"}
-                                      </div>
-                                      <div>ID: {r.vitelGlobal?.id || "-"}</div>
-                                      <div>
-                                        Vendor:{" "}
-                                        {providerAsset?.vendorName || "-"}
-                                      </div>
-                                      <div>
-                                        Company:{" "}
-                                        {providerAsset?.companyName || "-"}
-                                      </div>
-                                      <div>
-                                        Ext:{" "}
-                                        {providerAsset?.vonageExtCode || "-"}
-                                      </div>
-                                      <div>
-                                        Number:{" "}
-                                        {providerAsset?.vonageNumber || "-"}
-                                      </div>
+                                      <div>Category: {displayCategory}</div>
+                                      <div>ID: {displayId}</div>
+                                      <div>Vendor: {displayVendor}</div>
+                                      <div>Company: {displayCompany}</div>
+                                      <div>Ext: {displayExt}</div>
+                                      <div>Number: {displayNumber}</div>
                                       <div>
                                         Password:{" "}
-                                        {providerAsset?.vonagePassword
+                                        {displayPassword
                                           ? previewSecrets
-                                            ? providerAsset.vonagePassword
+                                            ? displayPassword
                                             : "••••••"
                                           : "-"}
                                       </div>
@@ -1279,21 +1581,18 @@ export default function ITDashboard() {
                                 Created:{" "}
                                 {new Date(r.createdAt).toLocaleString()}
                               </div>
+                            </div>
 
-                              <div className="flex justify-end gap-2 pt-2">
+                            <SheetFooter>
+                              <div className="w-full flex justify-end">
                                 <Button
                                   className="bg-blue-500 hover:bg-blue-600 text-white"
-                                  onClick={() => {
-                                    const params = new URLSearchParams({
-                                      itId: r.id,
-                                    });
-                                    window.location.href = `/it?${params.toString()}`;
-                                  }}
+                                  onClick={() => handleEditIT(r)}
                                 >
                                   <Pencil className="h-4 w-4 mr-1" /> Edit IT
                                 </Button>
                               </div>
-                            </div>
+                            </SheetFooter>
                           </SheetContent>
                         </Sheet>
                       </TableCell>
